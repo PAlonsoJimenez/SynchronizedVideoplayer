@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebPageName</title>
+    <link rel="stylesheet" type="text/css" href="indexStyle.css">
+</head>
+<body>
+<div class="mainContainer">
+    <div class="titleContainer">
+        <h3 id="title" class="text"> Title </h3>
+    </div>
+    <div class="videoContainer">
+        <video class="video" id="videoPlayer"></video>
+        <div class="controlsContainer">
+            <progress id="progressBar" value ="0"></progress>
+            <div class="buttons">
+                <button id="playPauseButton"></button>
+                <!-- <input type="image" id="playPauseButton"></input> -->
+                <button id="fullScreenButton"></button>
+            </div>
+        </div>
+    </div>
+    <div class="fileSelectorContainer">
+        <input type="file" id="UserFile" hidden="hidden" />
+        <button type="button" id="customButton">Select a file</button>
+        <span id="customText" class="text">No file chosen yet.</span>
+    </div>
+</div>
+
+<script src="indexScript.js"></script>
+</body>
+</html>
