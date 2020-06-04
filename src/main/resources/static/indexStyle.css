@@ -14,6 +14,36 @@ body {
     height: 100vh;
 }
 
+.connexionContainer{
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+}
+
+.userNameContainer{
+    display: flex;
+    flex-direction: row;
+}
+
+.createRoomContainer{
+    display: flex;
+    flex-direction: row;
+}
+
+.connectToRoomContainer{
+    display: flex;
+    flex-direction: row;
+}
+
+.flexItem{
+    margin: 0 5px;
+}
+
+.connexionStatus{
+    color: red;
+}
+
 .titleContainer{
     text-align : center;
 }
