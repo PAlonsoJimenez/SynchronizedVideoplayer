@@ -1,11 +1,12 @@
 package com.example.demo.model;
 
 import java.util.HashSet;
+import java.util.UUID;
 
 public class Room {
     private final User creator;
     private final HashSet<User> members;
-    private final long roomId;
+    private final String roomId;
 
     public Room(User creator) {
         this.creator = creator;
@@ -25,12 +26,11 @@ public class Room {
         return members;
     }
 
-    public long getRoomId() {
+    public String getRoomId() {
         return roomId;
     }
 
-    private long createRoomId() {
-        //TODO: create an unique room id
-        return 7;
+    private String createRoomId() {
+        return UUID.randomUUID().toString();
     }
 }
