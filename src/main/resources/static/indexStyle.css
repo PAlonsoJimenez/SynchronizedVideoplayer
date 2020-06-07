@@ -120,3 +120,13 @@ body {
 .video{
     width: 100%;
 }
+
+.prettyButton{
+    background: #009879;
+    border: 2px solid #00745d;
+    border-radius: 4px;
+    outline: none;
+    font-family: sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+}
