@@ -27,6 +27,7 @@ const customText = document.getElementById("customText");
 
 //Script Variables
 const PLAY_PAUSE = "playPause";
+const MOVE = "move";
 var mouseOverControls = false;
 var roomId = null;
 var stompClient = null;
@@ -81,6 +82,10 @@ function roomCreated() {
 function connectToCreatedRoom(responseJson) {
     let room = JSON.parse(responseJson);
     roomId = room.roomId;
+
+    roomConnectedName.innerHTML = "Connected to  Room: " + roomId;
+    roomConnectedName.style.color = "green";
+
     var socket = new SockJS("/room/" + roomId);
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
@@ -90,7 +95,7 @@ function connectToCreatedRoom(responseJson) {
 
 function subscribe(frame) {
     console.log("Connected");
-    console.log('Connected: ' + frame);
+    //console.log('Connected: ' + frame);
     stompClient.subscribe("/videoController/change/" + roomId, function (messageOutput) {
         receiveAction(JSON.parse(messageOutput.body));
     });
@@ -111,6 +116,9 @@ function receiveAction(message) {
             videoPlayer.currentTime = message.videoTimeStamp;
             playPauseAction();
             break;
+        case MOVE:
+            //TODO: Check videoTimeStamp type before doing moving...
+            moveToTimeAction(message.videoTimeStamp);
         default:
             break;
     }
@@ -131,7 +139,7 @@ function switchPlayPause() {
     //TODO: The sender of the message is receiving it too. I would like to NOT receive my own message.
     //playPauseAction();
 
-    //TODO: rest of the message body, if any
+    //TODO: rest of the message body, if any (Remember the jackson tag "optional" or something like that, that made some json attributes optionals)
     //TODO: See if I can pause the video... And then get the currentTime.
     videoCurrentTime = videoPlayer.currentTime;
     if(videoCurrentTime === null) videoCurrentTime = 0.0;
@@ -204,8 +212,20 @@ function progressBarMoveToTime(e) {
     if (videoPlayer.readyState !== 4)
         return;
     var percent = e.offsetX / this.offsetWidth;
-    videoPlayer.currentTime = percent * videoPlayer.duration;
-    progressBar.value = percent / 100;
+    videoPlayerNewCurrentTime = percent * videoPlayer.duration;
+
+
+    message = {action: MOVE, videoTimeStamp : videoPlayerNewCurrentTime};
+    sendAction(message);
+    //TODO: The sender of the message is receiving it too. I would like to NOT receive my own message.
+    //This one has to be after sending the message... try to do it with threads.
+    //moveToTimeAction()
+}
+
+function moveToTimeAction (newTime){
+    //TODO: check the newTime variable type after reading the message...
+    videoPlayer.currentTime = newTime;
+    progressBar.value = (newTime/videoPlayer.duration) / 100;
 }
 
 function mouseOverControlsContainer() {
