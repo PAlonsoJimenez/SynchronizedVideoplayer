@@ -6,6 +6,9 @@ const roomCodeTextField = document.getElementById("roomCodeTextField");
 const connectButton = document.getElementById("connectButton");
 const connectionStatusSpan = document.getElementById("connectionStatusSpan");
 
+//Title element
+const titleText = document.getElementById("title");
+
 //Video Player elements
 const videoContainer = document.querySelector(".videoContainer");
 const controlsContainer = document.querySelector(".controlsContainer");
@@ -31,6 +34,7 @@ const MOVE = "move";
 var mouseOverControls = false;
 var roomId = null;
 var stompClient = null;
+var userFile = null;
 
 //Event Listeners
 //Connection Event Listeners
@@ -42,6 +46,8 @@ fullScreenButton.addEventListener("click", fullScreen);
 videoPlayer.addEventListener("click", switchPlayPause);
 videoPlayer.addEventListener("timeupdate", updateVideState);
 videoPlayer.addEventListener("mousemove", fullScreenMode);
+videoPlayer.addEventListener("loadstart", userFileReady);
+videoPlayer.addEventListener("error", videoPlayerError);
 progressBar.addEventListener("click", progressBarMoveToTime);
 controlsContainer.addEventListener("mouseover", mouseOverControlsContainer);
 controlsContainer.addEventListener("mouseout", mouseOutControlsContainer);
@@ -169,6 +175,20 @@ function fullScreen() {
     }
 }
 
+function userFileReady(){
+    //TODO: If connected, disconnect
+    titleText.innerHTML = userFile.name;
+    customText.innerHTML = "File Loaded Successfully";
+}
+
+function videoPlayerError(){
+    //TODO: ask for the error variable in the method.
+    //TODO: If connected, disconnect
+    userFile = null;
+    titleText.innerHTML = "Title";
+    customText.innerHTML = "Unable To Load File";
+}
+
 function updateVideState() {
     updateProgressBar();
     if (videoPlayer.ended) {
@@ -242,19 +262,10 @@ function customButtonClick() {
 
 function selectFile() {
     if (hiddenInputFileButton.value) {
-        console.log(hiddenInputFileButton.value);
-        //customTxt.innerHTML = realFileBtn.value.match(/[\/\\]([\w\d\s\.\-\(\)]+)$/)[1];
-
-        //It seems the "type" attribute is not being added
-        videoPlayer.type = "video/mp4";
-        videoPlayer.src = URL.createObjectURL(hiddenInputFileButton.files[0]);
-
-        videoPlayer.onload = function () {
-            URL.revokeObjectURL(videoPlayer.src); // free memory
-        };
-
-    } else {
-        customText.innerHTML = "No file chosen, yet.";
+        userFile = hiddenInputFileButton.files[0];
+        console.log("Size: " + userFile.size);
+        videoPlayer.src = URL.createObjectURL(userFile);
+        //TODO: videoPlayer.onload = function () {URL.revokeObjectURL(videoPlayer.src); // free memory};
     }
 }
 
