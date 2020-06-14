@@ -31,12 +31,16 @@ const customText = document.getElementById("customText");
 //Script Variables
 const PLAY_PAUSE = "playPause";
 const MOVE = "move";
+var userId = "mysteryUser";
 var mouseOverControls = false;
 var roomId = null;
 var stompClient = null;
 var userFile = null;
 
 //Event Listeners
+//Event after DOM is Loaded:
+document.addEventListener('DOMContentLoaded', askForUserId);
+
 //Connection Event Listeners
 createRoomButton.addEventListener("click", createRoom);
 
@@ -56,18 +60,41 @@ controlsContainer.addEventListener("mouseout", mouseOutControlsContainer);
 customButton.addEventListener("click", customButtonClick);
 hiddenInputFileButton.addEventListener("change", selectFile);
 
+function askForUserId(){
+    console.log("Asking...");
+    httpRequest = new XMLHttpRequest();
+    httpRequest.onreadystatechange = setUserId;
+    url = "/getUserId";
+    httpRequest.open('GET', url, true);
+    httpRequest.send();
+}
+
+function setUserId() {
+    if (httpRequest.readyState === XMLHttpRequest.DONE) {
+        if (httpRequest.status === 200) {
+            let newUserId = JSON.parse(httpRequest.responseText);
+            userId = newUserId.id;
+            console.log(userId);
+        } else {
+            //TODO: show the problem?
+            // There was a problem with the request.
+            // For example, the response may have a 404 (Not Found)
+            // or 500 (Internal Server Error) response code.
+        }
+    }
+}
+
 function createRoom() {
-    userID = userIdTextField.value;
-    userID = userID.trim();
+    userName = userIdTextField.value;
+    userName = userName.trim();
     //TODO: Remember to validate this in the server side too.
-    if (!validateUserName(userID))
+    if (!validateUserName(userName))
         return;
 
     httpRequest = new XMLHttpRequest();
     httpRequest.onreadystatechange = roomCreated;
     url = "/createRoom";
-    url = addQueryParameters(url, "userId", userID);
-    console.log(url);
+    url = addQueryParameters(url, "userId", userName);
     httpRequest.open('POST', url, true);
     httpRequest.send();
 }
@@ -107,8 +134,8 @@ function subscribe(frame) {
     });
 }
 
-function validateUserName(userID) {
-    if (userID.length < 1) {
+function validateUserName(userName) {
+    if (userName.length < 1) {
         roomConnectedName.innerHTML = "User Name Empty";
         return false;
     }
