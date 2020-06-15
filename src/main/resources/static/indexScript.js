@@ -88,8 +88,7 @@ function createRoom() {
     userName = userIdTextField.value;
     userName = userName.trim();
     //TODO: Remember to validate this in the server side too.
-    if (!validateUserName(userName))
-        return;
+    if (!validateUserName(userName)) return;
 
     httpRequest = new XMLHttpRequest();
     httpRequest.onreadystatechange = roomCreated;
@@ -128,7 +127,6 @@ function connectToCreatedRoom(responseJson) {
 
 function subscribe(frame) {
     console.log("Connected");
-    //console.log('Connected: ' + frame);
     stompClient.subscribe("/videoController/change/" + roomId, function (messageOutput) {
         receiveAction(JSON.parse(messageOutput.body));
     });
@@ -143,14 +141,15 @@ function validateUserName(userName) {
 }
 
 function receiveAction(message) {
-    //TODO: the rest of the possible actions
+    //TODO: The sender of the message is receiving it too. I would like to NOT receive my own message.
+    if(message.senderId === userId) return;
+
     switch (message.action) {
         case PLAY_PAUSE:
             videoPlayer.currentTime = message.videoTimeStamp;
             playPauseAction();
             break;
         case MOVE:
-            //TODO: Check videoTimeStamp type before doing moving...
             moveToTimeAction(message.videoTimeStamp);
         default:
             break;
@@ -166,27 +165,21 @@ function sendAction(message) {
 }
 
 function switchPlayPause() {
-    if (videoPlayer.readyState !== 4)
-        return;
-
-    //TODO: The sender of the message is receiving it too. I would like to NOT receive my own message.
-    //playPauseAction();
-
-    //TODO: rest of the message body, if any (Remember the jackson tag "optional" or something like that, that made some json attributes optionals)
-    //TODO: See if I can pause the video... And then get the currentTime.
+    if (videoPlayer.readyState !== 4) return;
+    playPauseAction();
     videoCurrentTime = videoPlayer.currentTime;
     if(videoCurrentTime === null) videoCurrentTime = 0.0;
-    message = {action: PLAY_PAUSE, videoTimeStamp : videoCurrentTime};
+    message = {senderId: userId, action: PLAY_PAUSE, videoTimeStamp : videoCurrentTime};
     sendAction(message);
 }
 
 function playPauseAction() {
     if (videoPlayer.paused) {
-        playPauseButton.style.backgroundImage = "url(" + pauseIcon.src + ")";
         videoPlayer.play();
+        playPauseButton.style.backgroundImage = "url(" + pauseIcon.src + ")";
     } else {
-        playPauseButton.style.backgroundImage = "url(" + playIcon.src + ")";
         videoPlayer.pause();
+        playPauseButton.style.backgroundImage = "url(" + playIcon.src + ")";
     }
 }
 
@@ -256,21 +249,17 @@ function hideControls() {
 }
 
 function progressBarMoveToTime(e) {
-    if (videoPlayer.readyState !== 4)
-        return;
+    if (videoPlayer.readyState !== 4) return;
     var percent = e.offsetX / this.offsetWidth;
     videoPlayerNewCurrentTime = percent * videoPlayer.duration;
 
-
-    message = {action: MOVE, videoTimeStamp : videoPlayerNewCurrentTime};
+    message = {senderId: userId, action: MOVE, videoTimeStamp : videoPlayerNewCurrentTime};
     sendAction(message);
-    //TODO: The sender of the message is receiving it too. I would like to NOT receive my own message.
-    //This one has to be after sending the message... try to do it with threads.
-    //moveToTimeAction()
+    //Todo: This one has to be after sending the message... try to do it with threads.
+    moveToTimeAction(videoPlayerNewCurrentTime);
 }
 
 function moveToTimeAction (newTime){
-    //TODO: check the newTime variable type after reading the message...
     videoPlayer.currentTime = newTime;
     progressBar.value = (newTime/videoPlayer.duration) / 100;
 }
