@@ -4,7 +4,6 @@ const createRoomButton = document.getElementById("createRoomButton");
 const roomConnectedName = document.getElementById("roomConnectedName");
 const roomCodeTextField = document.getElementById("roomCodeTextField");
 const connectButton = document.getElementById("connectButton");
-const connectionStatusSpan = document.getElementById("connectionStatusSpan");
 
 //Title element
 const titleText = document.getElementById("title");
@@ -85,9 +84,9 @@ function setUserId() {
 }
 
 function createRoom() {
+    if(stompClient != null) disconnectFromRoom();
     userName = userIdTextField.value;
     userName = userName.trim();
-    //TODO: Remember to validate this in the server side too.
     if (!validateUserName(userName)) return;
 
     httpRequest = new XMLHttpRequest();
@@ -123,6 +122,20 @@ function connectToCreatedRoom(responseJson) {
     stompClient.connect({}, function (frame) {
         subscribe(frame);
     });
+}
+
+function disconnectFromRoom(){
+    disconnect();
+    roomConnectedName.innerHTML = "Not Connected Yet";
+    roomConnectedName.style.color = "red";
+    console.log("Disconnected");
+}
+
+function disconnect(){
+    if(stompClient != null) {
+        stompClient.disconnect();
+    }
+    stompClient = null;
 }
 
 function subscribe(frame) {
