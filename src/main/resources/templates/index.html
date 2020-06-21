@@ -7,41 +7,73 @@
 </head>
 <body>
 <div class="mainContainer">
-    <div class="connexionContainer">
-        <div class="userNameContainer">
-            <span class="text flexItem">User Name:</span>
-            <input class="flexItem" type="text" id="userIdTextField" value="Anonymous" maxlength="20"/>
-        </div>
-        <div class="createRoomContainer">
-            <button class="flexItem prettyButton" type="button" id="createRoomButton">Create a room</button>
-            <span class="connexionStatus flexItem" id="roomConnectedName">Not Connected Yet</span>
-        </div>
-        <div class="connectToRoomContainer">
-            <span class="text flexItem">Room Code:</span>
-            <input class="flexItem" type="text" id="roomCodeTextField"/>
-            <button class="flexItem prettyButton" type="button" id="connectButton">Connect</button>
-            <span class="connexionStatus flexItem" id="connectionStatusSpan">Not Connected</span>
-        </div>
-    </div>
-
-
-    <div class="titleContainer">
-        <h3 id="title" class="text"> Title </h3>
-    </div>
-    <div class="videoContainer">
-        <video class="video" id="videoPlayer"></video>
-        <div class="controlsContainer">
-            <progress id="progressBar" value ="0"></progress>
-            <div class="buttons">
-                <button id="playPauseButton"></button>
-                <button id="fullScreenButton"></button>
+    <div class="instructionsContainer">
+        <h2 class="text">Guide</h2>
+        <div class= "steps">
+            <div class="stepBox" id="step1">
+                <h3><b>Step 1:</b></h3>
+                <p>- Select a file</p>
+            </div>
+            <div class="stepBox" id="step2">
+                <h3><b>Step 2:</b></h3>
+                <p>- Create or join a room</p>
+            </div>
+            <div class="stepBox" id="step3">
+                <h3><b>Step 3:</b></h3>
+                <p>- Watch and enjoy</p>
             </div>
         </div>
     </div>
-    <div class="fileSelectorContainer">
-        <input type="file" id="UserFile" hidden="hidden" accept=".mp4"/>
-        <button class="prettyButton" type="button" id="customButton">Select a file</button>
-        <span id="customText" class="text">No file chosen yet.</span>
+
+    <div class="interactiveContainer">
+        <div class="connexionContainer">
+            <div class="userNameContainer">
+                <span class="text flexItem">User Name:</span>
+                <input class="flexItem" type="text" id="userIdTextField" value="Anonymous" maxlength="20"/>
+            </div>
+            <div class="createRoomContainer">
+                <button class="flexItem prettyButton" type="button" id="createRoomButton">Create a room</button>
+                <span class="connexionStatus flexItem" id="roomConnectedName">Not Connected Yet</span>
+            </div>
+            <div class="connectToRoomContainer">
+                <span class="text flexItem">Room Code:</span>
+                <input class="flexItem" type="text" id="roomCodeTextField"/>
+                <button class="flexItem prettyButton" type="button" id="connectButton">Connect</button>
+            </div>
+        </div>
+        <div class="titleContainer">
+            <h3 id="title" class="text"> Title </h3>
+        </div>
+        <div class="videoContainer">
+            <video class="video" id="videoPlayer"></video>
+            <div class="controlsContainer">
+                <progress id="progressBar" value="0"></progress>
+                <div class="buttons">
+                    <button id="playPauseButton"></button>
+                    <button id="fullScreenButton"></button>
+                </div>
+            </div>
+        </div>
+        <div class="fileSelectorContainer">
+            <input type="file" id="UserFile" hidden="hidden" accept=".mp4"/>
+            <button class="prettyButton" type="button" id="customButton">Select a file</button>
+            <span id="customText" class="text">No file chosen yet.</span>
+        </div>
+    </div>
+
+    <div class="roomInfoContainer">
+        <div class="NumberOfViewers">
+            <h4 class="text">Viewers: X</h4>
+        </div>
+        <div class="viewersTableContainer">
+            <table id="viewersTable">
+                <thead>
+                    <tr><th class="text">People Watching</th></tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
