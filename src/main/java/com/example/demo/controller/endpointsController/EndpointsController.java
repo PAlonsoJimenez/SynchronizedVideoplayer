@@ -1,4 +1,4 @@
-package com.example.demo.controller;
+package com.example.demo.controller.endpointsController;
 
 import com.example.demo.model.Message;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
