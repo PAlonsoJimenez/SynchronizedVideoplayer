@@ -1,5 +1,5 @@
 //Connection elements
-const userIdTextField = document.getElementById("userIdTextField");
+const userNameTextField = document.getElementById("userNameTextField");
 const createRoomButton = document.getElementById("createRoomButton");
 const roomConnectedName = document.getElementById("roomConnectedName");
 const roomCodeTextField = document.getElementById("roomCodeTextField");
@@ -41,7 +41,7 @@ var userFile = null;
 document.addEventListener('DOMContentLoaded', askForUserId);
 
 //Connection Event Listeners
-createRoomButton.addEventListener("click", createRoom);
+createRoomButton.addEventListener("click", validateRoomCreation);
 
 //Video Player Event Listeners
 playPauseButton.addEventListener("click", switchPlayPause);
@@ -83,16 +83,24 @@ function setUserId() {
     }
 }
 
-function createRoom() {
+function validateRoomCreation() {
     if(stompClient != null) disconnectFromRoom();
-    userName = userIdTextField.value;
-    userName = userName.trim();
-    if (!validateUserName(userName)) return;
+    roomCreatorName = userNameTextField.value;
+    roomCreatorName = roomCreatorName.trim();
+    roomCreatorId = userId;
+    //TODO: Maybe some user message to let the user know there is some problem?
+    //TODO: if the userId is invalid, ask again for a new userId.
+    if (!validateUserName(roomCreatorName)) return;
+    if(!validateUserId(roomCreatorId)) return;
+    createRoom(roomCreatorId, roomCreatorName);
+}
 
+function createRoom(roomCreatorId, roomCreatorName){
     httpRequest = new XMLHttpRequest();
     httpRequest.onreadystatechange = roomCreated;
     url = "/createRoom";
-    url = addQueryParameters(url, "userId", userName);
+    url = addQueryParameters(url, "userId", roomCreatorId);
+    url = addQueryParameters(url, "userName", roomCreatorName);
     httpRequest.open('POST', url, true);
     httpRequest.send();
 }
@@ -151,6 +159,14 @@ function validateUserName(userName) {
         return false;
     }
     return true;
+}
+
+function validateUserId(userIdToValidate){
+    if(userIdToValidate == null || userIdToValidate == "mysteryUser"){
+        return false;
+    }else{
+        return true;
+    }
 }
 
 function receiveAction(message) {
