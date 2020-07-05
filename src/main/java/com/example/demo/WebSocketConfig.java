@@ -12,13 +12,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/videoController");
+        config.enableSimpleBroker("/videoController", "/roomInfoController");
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/room/{room}");
-        registry.addEndpoint("/room/{room}").withSockJS();
+        registry.addEndpoint("/room/{roomId}", "/roomInfo/{roomId}");
+        registry.addEndpoint("/room/{roomId}", "/roomInfo/{roomId}").withSockJS();
     }
 }
