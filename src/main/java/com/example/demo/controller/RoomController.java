@@ -24,14 +24,18 @@ public class RoomController {
             roomsOpened.add(createdRoom);
             return createdRoom;
         }else{
-            throw new RoomException(RoomException.INVALID_USER_ID);
+            throw new RoomException(RoomException.INVALID_USER_ID, "Unable to create Room");
         }
     }
 
     public boolean joinRoom(String userId, String userName, String roomId, UserController userController, SimpMessagingTemplate template){
-        if(!userController.isUserActive(userId)) return false;
+        if(!userController.isUserActive(userId)){
+            throw new RoomException(RoomException.INVALID_USER_ID, "Unable to join Room");
+        }
         Room roomToJoin = roomsOpened.stream().filter(room -> room.getRoomId().equals(roomId)).findFirst().orElse(null);
-        if(roomToJoin == null) return false;
+        if(roomToJoin == null){
+            throw new RoomException(RoomException.INVALID_ROOM_ID, "Unable to join Room");
+        }
         userName = validateUserName(userName);
 
         roomToJoin.addMember(new User(userId, userName));
