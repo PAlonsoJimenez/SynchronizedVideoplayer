@@ -1,6 +1,7 @@
 package com.example.demo.controller.endpointsController;
 
 import com.example.demo.model.Message;
+import com.example.demo.model.Room;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -17,8 +18,15 @@ public class EndpointsController {
 
     @MessageMapping("/room/{roomId}")
     @SendTo("/videoController/change/{roomId}")
-    public Message send(@DestinationVariable String roomId, Message message) throws Exception {
+    public Message send(@DestinationVariable String roomId, Message message){
         return message;
+    }
+
+    @MessageMapping("/roomInfo/{roomId}")
+    @SendTo("/roomInfoController/change/{roomId}")
+    //TODO: change the type of object returned here, instead of Room, create something like 'RoomInfo'
+    public Room sendRoomInfo(@DestinationVariable String roomId, Room roomInfo){
+        return roomInfo;
     }
 }
 
