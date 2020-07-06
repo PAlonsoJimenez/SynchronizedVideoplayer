@@ -27,13 +27,17 @@ const hiddenInputFileButton = document.getElementById("UserFile");
 const customButton = document.getElementById("customButton");
 const customText = document.getElementById("customText");
 
+//RoomInfo elements
+const viewersTableBody = document.getElementById("viewersTableBody");
+
 //Script Variables
 const PLAY_PAUSE = "playPause";
 const MOVE = "move";
 var userId = "mysteryUser";
 var mouseOverControls = false;
 var roomId = null;
-var stompClient = null;
+var videoPlayerStompClient = null;
+var roomInfoStompClient = null;
 var userFile = null;
 
 //Event Listeners
@@ -64,7 +68,7 @@ hiddenInputFileButton.addEventListener("change", selectFile);
 ////////////////////////////////
 
 function createNewRoom(){
-    if(stompClient != null) disconnectFromRoom();
+    if(videoPlayerStompClient != null) disconnectFromRoom();
     roomCreatorName = userNameTextField.value;
     roomCreatorName = roomCreatorName.trim();
     roomCreatorId = userId;
@@ -82,7 +86,7 @@ function switchPlayPause() {
     if(videoCurrentTime === null) videoCurrentTime = 0.0;
     //Maybe move the message generation somewhere else?
     message = {senderId: userId, action: PLAY_PAUSE, videoTimeStamp : videoCurrentTime};
-    sendAction(message);
+    sendVideoPlayerChanges(message);
 }
 
 function fullScreen() {
@@ -140,7 +144,7 @@ function progressBarMoveToTime(e) {
     videoPlayerNewCurrentTime = percent * videoPlayer.duration;
 
     message = {senderId: userId, action: MOVE, videoTimeStamp : videoPlayerNewCurrentTime};
-    sendAction(message);
+    sendVideoPlayerChanges(message);
     //Todo: This one has to be after sending the message... try to do it with threads.
     moveToTimeAction(videoPlayerNewCurrentTime);
 }
@@ -231,23 +235,80 @@ function roomCreated() {
 
 function connectToCreatedRoom(responseJson) {
     let room = JSON.parse(responseJson);
+    roomId = room.roomId;
     updateRoomInfo(room);
+    subscribeToRoomInfoChangesOfCreatedRoom();
+    subscribeToVideoPlayerChangesOfCreatedRoom();
+}
 
+function subscribeToRoomInfoChangesOfCreatedRoom(){
+    var socket = new SockJS("/roomInfo/" + roomId);
+    roomInfoStompClient = Stomp.over(socket);
+    roomInfoStompClient.connect({}, function (frame) {
+        subscribeToRoomInfoChanges(frame);
+    });
+}
+
+function subscribeToRoomInfoChanges(frame) {
+    roomInfoStompClient.subscribe("/roomInfoController/change/" + roomId, function (messageOutput) {
+        receiveRoomInfoChanges(JSON.parse(messageOutput.body));
+    });
+    joinCreatedRoom();
+}
+
+function joinCreatedRoom(){
+    //TODO: I think at this point, we have already validated everything. If this would be
+    //TODO: a method that is called separately, maybe validate param again will be correct.
+    currentUserName = userNameTextField.value;
+    currentUserName = currentUserName.trim();
+    currentUserId = userId;
+    //TODO: Maybe some user message to let the user know there is some problem?
+    //TODO: if the userId is invalid, ask again for a new userId.
+    if (!validateUserName(currentUserName)) return;
+    if(!validateUserId(currentUserId)) return;
+    httpRequest = new XMLHttpRequest();
+    httpRequest.onreadystatechange = joinedRoom;
+    url = "/joinRoom";
+    url = addQueryParameters(url, "userId", currentUserId);
+    url = addQueryParameters(url, "userName", currentUserName);
+    url = addQueryParameters(url, "roomId", roomId);
+    httpRequest.open('POST', url, true);
+    httpRequest.send();
+}
+
+function joinedRoom(){
+    //TODO: see if this method should be deleted, or better info should be returned
+    if (httpRequest.readyState === XMLHttpRequest.DONE) {
+        if (httpRequest.status === 200) {
+            console.log(httpRequest.responseText);
+        } else {
+            //TODO: show the problem?
+            // There was a problem with the request.
+            // For example, the response may have a 404 (Not Found)
+            // or 500 (Internal Server Error) response code.
+        }
+    }
+}
+
+function receiveRoomInfoChanges(roomInfo) {
+    roomInfo.members.forEach(addPeopleWatching);
+}
+
+function subscribeToVideoPlayerChangesOfCreatedRoom(){
     var socket = new SockJS("/room/" + roomId);
-    stompClient = Stomp.over(socket);
-    stompClient.connect({}, function (frame) {
-        subscribe(frame);
+    videoPlayerStompClient = Stomp.over(socket);
+    videoPlayerStompClient.connect({}, function (frame) {
+        subscribeToVideoPlayerChanges(frame);
     });
 }
 
-function subscribe(frame) {
-    console.log("Connected");
-    stompClient.subscribe("/videoController/change/" + roomId, function (messageOutput) {
-        receiveAction(JSON.parse(messageOutput.body));
+function subscribeToVideoPlayerChanges(frame) {
+    videoPlayerStompClient.subscribe("/videoController/change/" + roomId, function (messageOutput) {
+        receiveVideoPlayerChanges(JSON.parse(messageOutput.body));
     });
 }
 
-function receiveAction(message) {
+function receiveVideoPlayerChanges(message) {
     //TODO: The sender of the message is receiving it too. I would like to NOT receive my own message.
     if(message.senderId === userId) return;
 
@@ -266,24 +327,26 @@ function receiveAction(message) {
     }
 }
 
-function sendAction(message) {
+function sendVideoPlayerChanges(message) {
     message = JSON.stringify(message);
-    if (stompClient !== null && roomId !== null) {
+    if (videoPlayerStompClient !== null && roomId !== null) {
         socketUrl = "/app/room/" + roomId;
-        stompClient.send(socketUrl, {}, message);
+        videoPlayerStompClient.send(socketUrl, {}, message);
     }
 }
 
 function disconnectFromRoom(){
-    disconnect();
+    disconnect(videoPlayerStompClient);
+    videoPlayerStompClient = null;
+    disconnect(roomInfoStompClient);
+    roomInfoStompClient = null;
     updateConnectionStatus();
 }
 
-function disconnect(){
+function disconnect(stompClient){
     if(stompClient != null) {
         stompClient.disconnect();
     }
-    stompClient = null;
 }
 
 /// Utility Methods ///
@@ -364,4 +427,14 @@ function updateProgressBar() {
 
 function moveToTimeAction (newTime){
     videoPlayer.currentTime = newTime;
+}
+
+function addPeopleWatching (newWatcher){
+    //TODO: define somewhere what is a watcher
+    var trNode = document.createElement("tr");
+    var thNode = document.createElement("th");
+    thNode.className = "roomViewer text";
+    thNode.innerHTML = newWatcher.userName;
+    trNode.appendChild(thNode);
+    viewersTableBody.appendChild(trNode);
 }
