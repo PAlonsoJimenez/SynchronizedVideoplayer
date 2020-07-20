@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', askForUserId);
 
 //Connection Event Listeners
 createRoomButton.addEventListener("click", createNewRoom);
+connectButton.addEventListener("click", connectToSomeoneElseRoom);
 
 //Video Player Event Listeners
 playPauseButton.addEventListener("click", switchPlayPause);
@@ -69,14 +70,22 @@ hiddenInputFileButton.addEventListener("change", selectFile);
 
 function createNewRoom(){
     if(videoPlayerStompClient != null) disconnectFromRoom();
-    roomCreatorName = userNameTextField.value;
-    roomCreatorName = roomCreatorName.trim();
+    roomCreatorName = getUserName();
     roomCreatorId = userId;
     //TODO: Maybe some user message to let the user know there is some problem?
     //TODO: if the userId is invalid, ask again for a new userId.
     if (!validateUserName(roomCreatorName)) return;
     if(!validateUserId(roomCreatorId)) return;
     createRoom(roomCreatorId, roomCreatorName);
+}
+
+function connectToSomeoneElseRoom(){
+    //TODO: call a restEndpoint for this method. Probably change the way the user connect to the room they just created after creating it too.
+    //TODO: If already connected to the room they wanted to connect, show message "already connected". Else the follow:
+    disconnectFromRoom();
+    //TODO: Validate roomCodeTExtField as a valid roomId
+    roomId = roomCodeTextField.value;
+    connectToRoom();
 }
 
 function switchPlayPause() {
@@ -182,12 +191,17 @@ function hideControls() {
         setControlsVisible(false);;
 }
 
+function getUserName(){
+    var roomCreatorName = userNameTextField.value;
+    roomCreatorName = roomCreatorName.trim();
+    return roomCreatorName;
+}
+
 /////////////////////////////////////
 /// SERVER COMMUNICATIONS METHODS ///
 /////////////////////////////////////
 
 function askForUserId(){
-    console.log("Asking...");
     httpRequest = new XMLHttpRequest();
     httpRequest.onreadystatechange = setUserId;
     url = "/getUserId";
@@ -236,7 +250,13 @@ function roomCreated() {
 function connectToCreatedRoom(responseJson) {
     let room = JSON.parse(responseJson);
     roomId = room.roomId;
+    //TODO: Move the updateRoomInfo to when the user is already connected to the room.
     updateRoomInfo(room);
+    connectToRoom();
+}
+
+function connectToRoom(){
+    //TODO: Change names
     subscribeToRoomInfoChangesOfCreatedRoom();
     subscribeToVideoPlayerChangesOfCreatedRoom();
 }
@@ -244,68 +264,47 @@ function connectToCreatedRoom(responseJson) {
 function subscribeToRoomInfoChangesOfCreatedRoom(){
     var socket = new SockJS("/roomInfo/" + roomId);
     roomInfoStompClient = Stomp.over(socket);
-    roomInfoStompClient.connect({}, function (frame) {
-        subscribeToRoomInfoChanges(frame);
-    });
+    //TODO: Let's try to use this one: client.connect(headers, connectCallback, errorCallback);
+    var headers = createStompConnectHeaders();
+    //TODO: errorCallBack function
+    roomInfoStompClient.connect(headers, subscribeToRoomInfoChanges); //It's missing an errorCallback function.
 }
 
-function subscribeToRoomInfoChanges(frame) {
+function subscribeToRoomInfoChanges() {
+    //subscribe(destination, callback, headers = {})
+    //It seems that the subscribe method doesn't have an errorCallback function as an argument.
+    var headers = createStompSubscribeToRoomInfoHeaders();
     roomInfoStompClient.subscribe("/roomInfoController/change/" + roomId, function (messageOutput) {
         receiveRoomInfoChanges(JSON.parse(messageOutput.body));
-    });
-    joinCreatedRoom();
-}
-
-function joinCreatedRoom(){
-    //TODO: I think at this point, we have already validated everything. If this would be
-    //TODO: a method that is called separately, maybe validate param again will be correct.
-    currentUserName = userNameTextField.value;
-    currentUserName = currentUserName.trim();
-    currentUserId = userId;
-    //TODO: Maybe some user message to let the user know there is some problem?
-    //TODO: if the userId is invalid, ask again for a new userId.
-    if (!validateUserName(currentUserName)) return;
-    if(!validateUserId(currentUserId)) return;
-    httpRequest = new XMLHttpRequest();
-    httpRequest.onreadystatechange = joinedRoom;
-    url = "/joinRoom";
-    url = addQueryParameters(url, "userId", currentUserId);
-    url = addQueryParameters(url, "userName", currentUserName);
-    url = addQueryParameters(url, "roomId", roomId);
-    httpRequest.open('POST', url, true);
-    httpRequest.send();
-}
-
-function joinedRoom(){
-    //TODO: see if this method should be deleted, or better info should be returned
-    if (httpRequest.readyState === XMLHttpRequest.DONE) {
-        if (httpRequest.status === 200) {
-            console.log(httpRequest.responseText);
-        } else {
-            //TODO: show the problem?
-            // There was a problem with the request.
-            // For example, the response may have a 404 (Not Found)
-            // or 500 (Internal Server Error) response code.
-        }
-    }
+    }, headers);
 }
 
 function receiveRoomInfoChanges(roomInfo) {
-    roomInfo.members.forEach(addPeopleWatching);
+    //todo: Store user info somewhere
+    //TODO: Leaving
+    if(roomInfo.action == "JOINING"){
+        addPeopleWatching(roomInfo.user);
+    }
+    if(roomInfo.action == "LEAVING"){
+    }
 }
 
 function subscribeToVideoPlayerChangesOfCreatedRoom(){
     var socket = new SockJS("/room/" + roomId);
     videoPlayerStompClient = Stomp.over(socket);
-    videoPlayerStompClient.connect({}, function (frame) {
-        subscribeToVideoPlayerChanges(frame);
-    });
+    //TODO: Let's try to use this one: client.connect(headers, connectCallback, errorCallback);
+    var headers = createStompConnectHeaders();
+    //TODO: errorCallBack function
+    videoPlayerStompClient.connect(headers, subscribeToVideoPlayerChanges); //It's missing an errorCallback function.
 }
 
-function subscribeToVideoPlayerChanges(frame) {
+function subscribeToVideoPlayerChanges() {
+    //subscribe(destination, callback, headers = {})
+    //It seems that the subscribe method doesn't have an errorCallback function as an argument.
+    var headers = createStompSubscribeToVideoPLayerChangeHeaders();
     videoPlayerStompClient.subscribe("/videoController/change/" + roomId, function (messageOutput) {
         receiveVideoPlayerChanges(JSON.parse(messageOutput.body));
-    });
+    }, headers);
 }
 
 function receiveVideoPlayerChanges(message) {
@@ -341,6 +340,7 @@ function disconnectFromRoom(){
     disconnect(roomInfoStompClient);
     roomInfoStompClient = null;
     updateConnectionStatus();
+    emptyViewersTable();
 }
 
 function disconnect(stompClient){
@@ -359,6 +359,28 @@ function addQueryParameters(originalQuery, key, value) {
     }
     originalQuery = originalQuery + key + "=" + encodeURIComponent(value);
     return originalQuery;
+}
+
+function createStompConnectHeaders(){
+    var stompConnectHeaders = {
+        userId: userId
+    };
+    return stompConnectHeaders;
+}
+
+function createStompSubscribeToVideoPLayerChangeHeaders(){
+    var stompHeaders = {
+        userId: userId
+    };
+    return stompHeaders;
+}
+
+function createStompSubscribeToRoomInfoHeaders(){
+    var stompHeaders = {
+        userId: userId,
+        userName: getUserName()
+    };
+    return stompHeaders;
 }
 
 //////////////////////////
@@ -437,4 +459,9 @@ function addPeopleWatching (newWatcher){
     thNode.innerHTML = newWatcher.userName;
     trNode.appendChild(thNode);
     viewersTableBody.appendChild(trNode);
+}
+
+function emptyViewersTable(){
+    //Maybe this left some object in memory that I'm not aware of?
+    viewersTableBody.innerHTML = "";
 }
