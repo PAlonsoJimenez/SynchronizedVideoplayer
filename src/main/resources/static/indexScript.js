@@ -36,8 +36,10 @@ const MOVE = "move";
 var userId = "mysteryUser";
 var mouseOverControls = false;
 var roomId = null;
-var videoPlayerStompClient = null;
-var roomInfoStompClient = null;
+var stompClient = null;
+var isConnected = false;
+var subscribedToRoom = null;
+var subscribedToRoomInfo = null;
 var userFile = null;
 
 //Event Listeners
@@ -69,7 +71,7 @@ hiddenInputFileButton.addEventListener("change", selectFile);
 ////////////////////////////////
 
 function createNewRoom(){
-    if(videoPlayerStompClient != null) disconnectFromRoom();
+    if(subscribedToRoom != null) unsubscribeFromRoom();
     roomCreatorName = getUserName();
     roomCreatorId = userId;
     //TODO: Maybe some user message to let the user know there is some problem?
@@ -214,7 +216,7 @@ function setUserId() {
         if (httpRequest.status === 200) {
             let newUserId = JSON.parse(httpRequest.responseText);
             userId = newUserId.id;
-            console.log(userId);
+            connectToServer();
         } else {
             //TODO: show the problem?
             // There was a problem with the request.
@@ -224,7 +226,36 @@ function setUserId() {
     }
 }
 
+function connectToServer(){
+    var socket = new SockJS("/privateUserEndpoint");
+    stompClient = Stomp.over(socket);
+    var headers = createStompConnectHeaders();
+    //method used: client.connect(headers, connectCallback, errorCallback)
+    stompClient.connect(headers, subscribeToUserPrivateChannel, unableToConnectToServer); //It's missing an errorCallback function.
+}
+
+function unableToConnectToServer(){
+    //TODO: This method
+    console.log("Unable to connect to server. EXPLOSION!!!");
+}
+
+function subscribeToUserPrivateChannel(){
+    isConnected = true;
+    var headers = createStompSubscribeToRoomInfoHeaders();
+    stompClient.subscribe("/user/queue/reply", function (messageOutput) {
+        receivePrivateUserInfo(JSON.parse(messageOutput.body));
+    }, headers);
+}
+
+function receivePrivateUserInfo(userInfo){
+    //TODO: this method
+    console.log("UserInfo: ");
+    console.log(userInfo);
+}
+
 function createRoom(roomCreatorId, roomCreatorName){
+    //Not letting the user create a new room if they aren't previously connected to the server
+    if(!isConnected) return;
     httpRequest = new XMLHttpRequest();
     httpRequest.onreadystatechange = roomCreated;
     url = "/createRoom";
@@ -237,7 +268,7 @@ function createRoom(roomCreatorId, roomCreatorName){
 function roomCreated() {
     if (httpRequest.readyState === XMLHttpRequest.DONE) {
         if (httpRequest.status === 200) {
-            connectToCreatedRoom(httpRequest.responseText);
+            subscribeToRoomChannels(httpRequest.responseText);
         } else {
             //TODO: show the problem?
             // There was a problem with the request.
@@ -247,34 +278,22 @@ function roomCreated() {
     }
 }
 
-function connectToCreatedRoom(responseJson) {
+function subscribeToRoomChannels(responseJson) {
     let room = JSON.parse(responseJson);
     roomId = room.roomId;
-    //TODO: Move the updateRoomInfo to when the user is already connected to the room.
+    subscribeToRoomInfoChanges();
+    subscribeToVideoPlayerChanges();
+    //TODO: The Stomp library doesn't give a confirmation message of any kind for a subscription. We can't
+    //Todo: be sure about if the user have successfully subscribed to a specific channel...
     updateRoomInfo(room);
-    connectToRoom();
-}
-
-function connectToRoom(){
-    //TODO: Change names
-    subscribeToRoomInfoChangesOfCreatedRoom();
-    subscribeToVideoPlayerChangesOfCreatedRoom();
-}
-
-function subscribeToRoomInfoChangesOfCreatedRoom(){
-    var socket = new SockJS("/roomInfo/" + roomId);
-    roomInfoStompClient = Stomp.over(socket);
-    //TODO: Let's try to use this one: client.connect(headers, connectCallback, errorCallback);
-    var headers = createStompConnectHeaders();
-    //TODO: errorCallBack function
-    roomInfoStompClient.connect(headers, subscribeToRoomInfoChanges); //It's missing an errorCallback function.
 }
 
 function subscribeToRoomInfoChanges() {
     //subscribe(destination, callback, headers = {})
     //It seems that the subscribe method doesn't have an errorCallback function as an argument.
+    //It seems that you are unable to know if the subscription was successful...
     var headers = createStompSubscribeToRoomInfoHeaders();
-    roomInfoStompClient.subscribe("/roomInfoController/change/" + roomId, function (messageOutput) {
+    stompClient.subscribe("/roomInfoController/change/" + roomId, function (messageOutput) {
         receiveRoomInfoChanges(JSON.parse(messageOutput.body));
     }, headers);
 }
@@ -289,20 +308,12 @@ function receiveRoomInfoChanges(roomInfo) {
     }
 }
 
-function subscribeToVideoPlayerChangesOfCreatedRoom(){
-    var socket = new SockJS("/room/" + roomId);
-    videoPlayerStompClient = Stomp.over(socket);
-    //TODO: Let's try to use this one: client.connect(headers, connectCallback, errorCallback);
-    var headers = createStompConnectHeaders();
-    //TODO: errorCallBack function
-    videoPlayerStompClient.connect(headers, subscribeToVideoPlayerChanges); //It's missing an errorCallback function.
-}
-
 function subscribeToVideoPlayerChanges() {
     //subscribe(destination, callback, headers = {})
     //It seems that the subscribe method doesn't have an errorCallback function as an argument.
+    //It seems that you are unable to know if the subscription was successful...
     var headers = createStompSubscribeToVideoPLayerChangeHeaders();
-    videoPlayerStompClient.subscribe("/videoController/change/" + roomId, function (messageOutput) {
+    subscribedToRoom = stompClient.subscribe("/videoController/change/" + roomId, function (messageOutput) {
         receiveVideoPlayerChanges(JSON.parse(messageOutput.body));
     }, headers);
 }
@@ -334,16 +345,18 @@ function sendVideoPlayerChanges(message) {
     }
 }
 
-function disconnectFromRoom(){
-    disconnect(videoPlayerStompClient);
-    videoPlayerStompClient = null;
-    disconnect(roomInfoStompClient);
-    roomInfoStompClient = null;
+function unsubscribeFromRoom(){
+    if(subscribedToRoom != null) subscribedToRoom.unsubscribe();
+    if(subscribedToRoomInfo != null) subscribedToRoomInfo.unsubscribe();
+
+    subscribedToRoom = null;
+    subscribedToRoomInfo = null;
+    //TODO: Change method name
     updateConnectionStatus();
     emptyViewersTable();
 }
 
-function disconnect(stompClient){
+function disconnect(){
     if(stompClient != null) {
         stompClient.disconnect();
     }
