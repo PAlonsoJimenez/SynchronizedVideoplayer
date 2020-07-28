@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import com.example.demo.controller.CustomHandshakeHandler;
 import com.example.demo.controller.MessagesInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -14,14 +15,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/videoController", "/roomInfoController");
+        config.enableSimpleBroker("/videoController", "/roomInfoController", "/queue");
         config.setApplicationDestinationPrefixes("/app");
+        config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/room/{roomId}", "/roomInfo/{roomId}");
-        registry.addEndpoint("/room/{roomId}", "/roomInfo/{roomId}").withSockJS();
+        registry.addEndpoint("/room/{roomId}", "/roomInfo/{roomId}", "/privateUserEndpoint").setHandshakeHandler(new CustomHandshakeHandler());
+        registry.addEndpoint("/room/{roomId}", "/roomInfo/{roomId}", "/privateUserEndpoint").setHandshakeHandler(new CustomHandshakeHandler()).withSockJS();
     }
 
     @Override
