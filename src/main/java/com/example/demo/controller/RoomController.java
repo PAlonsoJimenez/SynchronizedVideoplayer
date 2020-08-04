@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Room;
+import com.example.demo.model.RoomInfoMessage;
 import com.example.demo.model.User;
 import com.example.demo.persistence.DatabaseManager;
 
@@ -34,9 +35,15 @@ public class RoomController {
         if(roomToJoin == null) return false;
 
         userName = userController.validateUserName(userName);
+        //TODO: For the user do something as publicId and privateID
         User joiningUser = new User(userId, userName);
         DatabaseManager.addUserToRoom(roomId, joiningUser);
 
         return true;
+    }
+
+    public RoomInfoMessage getRoomMembersInfo(String roomId){
+        Room room = DatabaseManager.getRoom(roomId);
+        return new RoomInfoMessage(room.getMembers());
     }
 }
