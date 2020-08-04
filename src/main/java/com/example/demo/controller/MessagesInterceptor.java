@@ -25,7 +25,8 @@ public class MessagesInterceptor implements ChannelInterceptor {
 
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(message);
 
-        //I'm assuming you can send a StompCommand 'SEND' only after being connected and subscribed...
+        //Documentation said: "When the client is connected to the server, it can send STOMP messages using the send() method."
+        //So it seems you need to be connected to send message with send();
         if(StompCommand.SEND.equals(headerAccessor.getCommand())){
             return message;
         }
@@ -63,6 +64,7 @@ public class MessagesInterceptor implements ChannelInterceptor {
 
         String[] destinationPages = destination.split("/");
         //Todo: Magic number
+        //TODO: change this to full directions (/roomInfoController/change/{roomId})
         if(destinationPages.length != 4){
             //TODO: log error
             return null;
@@ -76,9 +78,17 @@ public class MessagesInterceptor implements ChannelInterceptor {
                 return videoControllerSubscribingAttempt(headerAccessor, destinationPages, message);
             case "roomInfoController":
                 return roomInfoControllerSubscribingAttempt(headerAccessor, destinationPages, message);
+                //TODO: this better:
+            case "user":
+                return userPrivateInfoSubscribingAttempt(headerAccessor, message);
             default:
                 return null;
         }
+    }
+
+    private Message<?> userPrivateInfoSubscribingAttempt(StompHeaderAccessor headerAccessor, Message<?> message) {
+        //TODO: send userId in Stomp headers in the js
+        return message;
     }
 
     private Message<?> videoControllerSubscribingAttempt(StompHeaderAccessor headerAccessor, String[] destinationPages, Message<?> message) {
@@ -88,12 +98,18 @@ public class MessagesInterceptor implements ChannelInterceptor {
     }
 
     private Message<?> roomInfoControllerSubscribingAttempt(StompHeaderAccessor headerAccessor, String[] destinationPages, Message<?> message) {
+        //TODO: I'm doing the validations twice, once here and again in the joinRoom method...
         String userId = validateUserIdInHeaderAccessor(headerAccessor);
-        if(userId == null) return null;
+        String userName = validateUserNameInHeaderAccessor(headerAccessor);
+        if(userId == null || userName == null) return null;
         String roomId = destinationPages[3];
-        //TODO: send the userName in the StompHeader in the js and get the userName here.
-        boolean successfullyJoin = roomController.joinRoom(userId, "john", roomId, userController);
+        //TODO: Check if roomId is valid (check if a room with that id exist)
+
+        /*
+        boolean successfullyJoin = roomController.joinRoom(userId, userName, roomId, userController);
         return ((successfullyJoin) ? message : null);
+        */
+        return message;
     }
 
     private String validateUserIdInHeaderAccessor(StompHeaderAccessor headerAccessor){
@@ -113,5 +129,16 @@ public class MessagesInterceptor implements ChannelInterceptor {
             return null;
         }
         return userId;
+    }
+
+    private String validateUserNameInHeaderAccessor(StompHeaderAccessor headerAccessor) {
+        if(!headerAccessor.containsNativeHeader("userName")){
+            //TODO: log error
+            return null;
+        }
+        String userName = headerAccessor.getFirstNativeHeader("userName");
+        userName = userController.validateUserName(userName);
+        headerAccessor.setNativeHeader("userName", userName);
+        return userName;
     }
 }
