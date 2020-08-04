@@ -84,10 +84,10 @@ function createNewRoom(){
 function connectToSomeoneElseRoom(){
     //TODO: call a restEndpoint for this method. Probably change the way the user connect to the room they just created after creating it too.
     //TODO: If already connected to the room they wanted to connect, show message "already connected". Else the follow:
-    disconnectFromRoom();
+    if(subscribedToRoom != null) unsubscribeFromRoom();
     //TODO: Validate roomCodeTExtField as a valid roomId
     roomId = roomCodeTextField.value;
-    connectToRoom();
+    subscribeToRoomChannels();
 }
 
 function switchPlayPause() {
@@ -248,9 +248,9 @@ function subscribeToUserPrivateChannel(){
 }
 
 function receivePrivateUserInfo(userInfo){
-    //TODO: this method
-    console.log("UserInfo: ");
-    console.log(userInfo);
+    if(userInfo.action == "FULL_ROOM_INFO"){
+        userInfo.users.forEach(addPeopleWatching);
+    }
 }
 
 function createRoom(roomCreatorId, roomCreatorName){
@@ -268,7 +268,7 @@ function createRoom(roomCreatorId, roomCreatorName){
 function roomCreated() {
     if (httpRequest.readyState === XMLHttpRequest.DONE) {
         if (httpRequest.status === 200) {
-            subscribeToRoomChannels(httpRequest.responseText);
+            parseRoomInfo(httpRequest.responseText);
         } else {
             //TODO: show the problem?
             // There was a problem with the request.
@@ -278,14 +278,18 @@ function roomCreated() {
     }
 }
 
-function subscribeToRoomChannels(responseJson) {
+function parseRoomInfo(responseJson){
     let room = JSON.parse(responseJson);
     roomId = room.roomId;
-    subscribeToRoomInfoChanges();
-    subscribeToVideoPlayerChanges();
+    subscribeToRoomChannels();
     //TODO: The Stomp library doesn't give a confirmation message of any kind for a subscription. We can't
     //Todo: be sure about if the user have successfully subscribed to a specific channel...
     updateRoomInfo(room);
+}
+
+function subscribeToRoomChannels() {
+    subscribeToRoomInfoChanges();
+    subscribeToVideoPlayerChanges();
 }
 
 function subscribeToRoomInfoChanges() {
@@ -302,7 +306,7 @@ function receiveRoomInfoChanges(roomInfo) {
     //todo: Store user info somewhere
     //TODO: Leaving
     if(roomInfo.action == "JOINING"){
-        addPeopleWatching(roomInfo.user);
+        roomInfo.users.forEach(addPeopleWatching);
     }
     if(roomInfo.action == "LEAVING"){
     }
