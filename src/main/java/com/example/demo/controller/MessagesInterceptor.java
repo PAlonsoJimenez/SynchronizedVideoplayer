@@ -25,7 +25,7 @@ public class MessagesInterceptor implements ChannelInterceptor {
 
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(message);
 
-        //Documentation said: "When the client is connected to the server, it can send STOMP messages using the send() method."
+        //Documentation says: "When the client is connected to the server, it can send STOMP messages using the send() method."
         //So it seems you need to be connected to send message with send();
         if(StompCommand.SEND.equals(headerAccessor.getCommand())){
             return message;
@@ -94,7 +94,13 @@ public class MessagesInterceptor implements ChannelInterceptor {
     private Message<?> videoControllerSubscribingAttempt(StompHeaderAccessor headerAccessor, String[] destinationPages, Message<?> message) {
         String userId = validateUserIdInHeaderAccessor(headerAccessor);
         if(userId == null) return null;
-        return ((userId == null) ? null : message);
+
+        //TODO: magic umber
+        String roomId = destinationPages[3];
+        String connectionId = headerAccessor.getUser().getName();
+        if(!roomController.addVideoControllerSubscriber(roomId, connectionId)) return null;
+
+        return message;
     }
 
     private Message<?> roomInfoControllerSubscribingAttempt(StompHeaderAccessor headerAccessor, String[] destinationPages, Message<?> message) {
@@ -102,13 +108,11 @@ public class MessagesInterceptor implements ChannelInterceptor {
         String userId = validateUserIdInHeaderAccessor(headerAccessor);
         String userName = validateUserNameInHeaderAccessor(headerAccessor);
         if(userId == null || userName == null) return null;
-        String roomId = destinationPages[3];
-        //TODO: Check if roomId is valid (check if a room with that id exist)
 
-        /*
-        boolean successfullyJoin = roomController.joinRoom(userId, userName, roomId, userController);
-        return ((successfullyJoin) ? message : null);
-        */
+        String roomId = destinationPages[3];
+        String connectionId = headerAccessor.getUser().getName();
+        if(!roomController.addRoomInfoSubscriber(roomId, connectionId)) return null;
+
         return message;
     }
 
