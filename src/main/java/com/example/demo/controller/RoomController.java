@@ -42,6 +42,18 @@ public class RoomController {
         return true;
     }
 
+    public boolean addVideoControllerSubscriber(String roomId, String connectionId){
+        Room room = DatabaseManager.getRoom(roomId);
+        if(room == null) return false;
+        return room.addVideoControllerSubscriber(connectionId);
+    }
+
+    public boolean addRoomInfoSubscriber(String roomId, String connectionId){
+        Room room = DatabaseManager.getRoom(roomId);
+        if(room == null) return false;
+        return room.addRoomInfoSubscriber(connectionId);
+    }
+
     public RoomInfoMessage getRoomMembersInfo(String roomId){
         Room room = DatabaseManager.getRoom(roomId);
         return new RoomInfoMessage(room.getMembers());
