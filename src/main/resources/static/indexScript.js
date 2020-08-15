@@ -83,10 +83,10 @@ function createNewRoom(){
 
 function connectToSomeoneElseRoom(){
     //TODO: call a restEndpoint for this method. Probably change the way the user connect to the room they just created after creating it too.
-    //TODO: If already connected to the room they wanted to connect, show message "already connected". Else the follow:
+    var roomCode = roomCodeTextField.value;
+    if(!validateRoomCode(roomCode)) return;
     if(subscribedToRoom != null) unsubscribeFromRoom();
-    //TODO: Validate roomCodeTExtField as a valid roomId
-    roomId = roomCodeTextField.value;
+    roomId = roomCode;
     subscribeToRoomChannels();
 }
 
@@ -420,6 +420,17 @@ function validateUserId(userIdToValidate){
     }else{
         return true;
     }
+}
+
+function validateRoomCode(roomCode){
+    if(roomCode == null) return false;
+    if(roomCode == roomId){
+        //TODO: Show message: "already connected to room x"
+        console.log("Already connected to that room");
+        return false;
+    }
+
+    return true;
 }
 
 ////////////////////
