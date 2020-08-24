@@ -16,11 +16,11 @@ public class RoomController {
     }
     */
 
-    public Room createRoom(String userId, String userName, UserController userController){
+    public Room createRoom(String userId, String userName, double videoDuration, UserController userController){
         userName = userController.validateUserName(userName);
         if(userController.isUserIdValid(userId)) {
             //TODO: How to deal with stolen uuid...?
-            Room createdRoom = new Room(new User(userId, userName));
+            Room createdRoom = new Room(new User(userId, userName), videoDuration);
             DatabaseManager.addCreatedRoom(createdRoom);
             return createdRoom;
         }else{
@@ -57,5 +57,23 @@ public class RoomController {
     public RoomInfoMessage getRoomMembersInfo(String roomId){
         Room room = DatabaseManager.getRoom(roomId);
         return new RoomInfoMessage(room.getMembers());
+    }
+
+    public boolean isSameVideoDuration(String roomId, double videoDuration){
+        Room room = DatabaseManager.getRoom(roomId);
+        if(room == null) return false;
+        return (room.getVideoDuration() == videoDuration);
+    }
+
+    public boolean isVideoControllerSubscriber(String roomId, String connectionId){
+        Room room = DatabaseManager.getRoom(roomId);
+        if(room == null) return false;
+        return room.isVideoControllerSubscriber(connectionId);
+    }
+
+    public boolean isRoomInfoSubscriber(String roomId, String connectionId){
+        Room room = DatabaseManager.getRoom(roomId);
+        if(room == null) return false;
+        return room.isRoomInfoSubscriber(connectionId);
     }
 }
