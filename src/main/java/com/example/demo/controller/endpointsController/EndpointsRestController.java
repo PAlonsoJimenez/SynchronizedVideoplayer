@@ -20,7 +20,8 @@ public class EndpointsRestController {
 
     @PostMapping(value = "/createRoom", produces = "application/json")
     public Room createRoom(@RequestParam(name = "userId") String userId,
-                           @RequestParam(name = "userName") String userName){
-        return roomController.createRoom(userId, userName, userController);
+                           @RequestParam(name = "userName") String userName,
+                           @RequestParam(name = "videoDuration") double videoDuration){
+        return roomController.createRoom(userId, userName, videoDuration, userController);
     }
 }
