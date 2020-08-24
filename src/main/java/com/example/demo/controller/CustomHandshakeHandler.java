@@ -20,6 +20,8 @@ public class CustomHandshakeHandler extends DefaultHandshakeHandler{
 
     @Override
     protected Principal determineUser(ServerHttpRequest request, WebSocketHandler wsHandler, Map<String, Object> attributes) {
+        //TODO: limit the number of connection by ip with request.getRemoteAddress();
+        //System.out.println(request.getRemoteAddress());
         return new StompPrincipal(UUID.randomUUID().toString());
     }
 }
