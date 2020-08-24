@@ -71,6 +71,8 @@ hiddenInputFileButton.addEventListener("change", selectFile);
 ////////////////////////////////
 
 function createNewRoom(){
+    var videoDuration = validateUserFile();
+    if(videoDuration <= 0) return;
     if(subscribedToRoom != null) unsubscribeFromRoom();
     roomCreatorName = getUserName();
     roomCreatorId = userId;
@@ -78,11 +80,12 @@ function createNewRoom(){
     //TODO: if the userId is invalid, ask again for a new userId.
     if (!validateUserName(roomCreatorName)) return;
     if(!validateUserId(roomCreatorId)) return;
-    createRoom(roomCreatorId, roomCreatorName);
+    createRoom(roomCreatorId, roomCreatorName, videoDuration);
 }
 
 function connectToSomeoneElseRoom(){
-    //TODO: call a restEndpoint for this method. Probably change the way the user connect to the room they just created after creating it too.
+    var videoDuration = validateUserFile();
+    if(videoDuration <= 0) return;
     var roomCode = roomCodeTextField.value;
     if(!validateRoomCode(roomCode)) return;
     if(subscribedToRoom != null) unsubscribeFromRoom();
@@ -241,7 +244,7 @@ function unableToConnectToServer(){
 
 function subscribeToUserPrivateChannel(){
     isConnected = true;
-    var headers = createStompSubscribeToRoomInfoHeaders();
+    var headers = createStompSubscribeToUserPrivateChannel();
     stompClient.subscribe("/user/queue/reply", function (messageOutput) {
         receivePrivateUserInfo(JSON.parse(messageOutput.body));
     }, headers);
@@ -253,7 +256,7 @@ function receivePrivateUserInfo(userInfo){
     }
 }
 
-function createRoom(roomCreatorId, roomCreatorName){
+function createRoom(roomCreatorId, roomCreatorName, videoDuration){
     //Not letting the user create a new room if they aren't previously connected to the server
     if(!isConnected) return;
     httpRequest = new XMLHttpRequest();
@@ -261,6 +264,7 @@ function createRoom(roomCreatorId, roomCreatorName){
     url = "/createRoom";
     url = addQueryParameters(url, "userId", roomCreatorId);
     url = addQueryParameters(url, "userName", roomCreatorName);
+    url = addQueryParameters(url, "videoDuration", videoDuration);
     httpRequest.open('POST', url, true);
     httpRequest.send();
 }
@@ -343,9 +347,9 @@ function receiveVideoPlayerChanges(message) {
 
 function sendVideoPlayerChanges(message) {
     message = JSON.stringify(message);
-    if (videoPlayerStompClient !== null && roomId !== null) {
+    if (stompClient !== null && roomId !== null) {
         socketUrl = "/app/room/" + roomId;
-        videoPlayerStompClient.send(socketUrl, {}, message);
+        stompClient.send(socketUrl, {}, message);
     }
 }
 
@@ -385,17 +389,28 @@ function createStompConnectHeaders(){
     return stompConnectHeaders;
 }
 
-function createStompSubscribeToVideoPLayerChangeHeaders(){
+function createStompSubscribeToUserPrivateChannel(){
     var stompHeaders = {
-        userId: userId
+        userId: userId,
+    };
+    return stompHeaders;
+}
+
+function createStompSubscribeToVideoPLayerChangeHeaders(){
+    console.log("Video player duration: " + videoPlayer.duration);
+    var stompHeaders = {
+        userId: userId,
+        videoDuration: videoPlayer.duration
     };
     return stompHeaders;
 }
 
 function createStompSubscribeToRoomInfoHeaders(){
+    console.log("Room info duration: " + videoPlayer.duration);
     var stompHeaders = {
         userId: userId,
-        userName: getUserName()
+        userName: getUserName(),
+        videoDuration: videoPlayer.duration
     };
     return stompHeaders;
 }
@@ -431,6 +446,16 @@ function validateRoomCode(roomCode){
     }
 
     return true;
+}
+
+function validateUserFile(){
+    if(userFile == null){
+        //TODO: message to user
+        console.log("No file selected!");
+        return -1;
+    }
+
+    return videoPlayer.duration;
 }
 
 ////////////////////
