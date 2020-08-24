@@ -6,13 +6,15 @@ import java.util.UUID;
 
 public class Room {
     private final User creator;
+    private double videoDuration;
     private final HashSet<User> members;
     private final String roomId;
     private final ArrayList<String> videoControllerSubscribers;
     private final ArrayList<String> roomInfoSubscribers;
 
-    public Room(User creator) {
+    public Room(User creator, double videoDuration) {
         this.creator = creator;
+        this.videoDuration = videoDuration;
         members = new HashSet<>();
         roomId = createRoomId();
         videoControllerSubscribers = new ArrayList<>();
@@ -25,6 +27,10 @@ public class Room {
 
     public User getCreator() {
         return creator;
+    }
+
+    public double getVideoDuration(){
+        return videoDuration;
     }
 
     public HashSet<User> getMembers() {
@@ -48,6 +54,10 @@ public class Room {
         }
     }
 
+    public boolean isVideoControllerSubscriber(String connectionId){
+        return videoControllerSubscribers.contains(connectionId);
+    }
+
     public boolean addRoomInfoSubscriber(String connectionId){
         if(roomInfoSubscribers.contains(connectionId)){
             return false;
@@ -55,5 +65,9 @@ public class Room {
             roomInfoSubscribers.add(connectionId);
             return true;
         }
+    }
+
+    public boolean isRoomInfoSubscriber(String connectionId){
+        return roomInfoSubscribers.contains(connectionId);
     }
 }
