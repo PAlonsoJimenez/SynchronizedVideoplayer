@@ -28,7 +28,14 @@ public class MessagesInterceptor implements ChannelInterceptor {
         //Documentation says: "When the client is connected to the server, it can send STOMP messages using the send() method."
         //So it seems you need to be connected to send message with send();
         if(StompCommand.SEND.equals(headerAccessor.getCommand())){
-            return message;
+            /*
+            * I end up checking if the user that send the message is a valid user
+            * and if is subscribed to the channel they trying to se the message to,
+            * because otherwise a user that knows the room code of the channel, even if
+            * they are unable to subscribe to that channel without proper permission/validation,
+            * they would have been able to send message to that channel.
+            */
+            return tryingToSend(message);
         }
 
         if(StompCommand.CONNECT.equals(headerAccessor.getCommand())){
@@ -44,7 +51,41 @@ public class MessagesInterceptor implements ChannelInterceptor {
             //System.out.println("DISCONNECTING");
         }
 
+        //TODO: check if I should return null instead of message here.
         return message;
+    }
+
+    private Message<?> tryingToSend(Message<?> message) {
+        //TODO clean this method
+        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(message);
+        String userId = validateUserIdInHeaderAccessor(headerAccessor);
+        String destination = headerAccessor.getDestination();
+        if(destination == null){
+            //TODO: log error
+            return null;
+        }
+
+        String[] destinationPages = destination.split("/");
+        //Todo: Magic number
+        //destination pages here: /app/room/{roomId} or /roomInfo/{roomId}
+        if(destinationPages.length != 4){
+            //TODO: log error
+            return null;
+        }
+
+        //Todo: Magic number
+        String destinationPrefix = destinationPages[2];
+        String roomId = destinationPages[3];
+        String connectionId = headerAccessor.getUser().getName();
+
+        switch(destinationPrefix){
+            case "room":
+                return ((roomController.isVideoControllerSubscriber(roomId, connectionId)) ? message :  null);
+            case "roomInfo":
+                return ((roomController.isRoomInfoSubscriber(roomId, connectionId)) ? message :  null);
+            default:
+                return null;
+        }
     }
 
     private Message<?> tryingToConnect(Message<?> message) {
@@ -95,8 +136,10 @@ public class MessagesInterceptor implements ChannelInterceptor {
         String userId = validateUserIdInHeaderAccessor(headerAccessor);
         if(userId == null) return null;
 
-        //TODO: magic umber
+        //TODO: magic number
         String roomId = destinationPages[3];
+        if(!validateRoomVideoDuration(roomId, headerAccessor)) return null;
+
         String connectionId = headerAccessor.getUser().getName();
         if(!roomController.addVideoControllerSubscriber(roomId, connectionId)) return null;
 
@@ -109,7 +152,10 @@ public class MessagesInterceptor implements ChannelInterceptor {
         String userName = validateUserNameInHeaderAccessor(headerAccessor);
         if(userId == null || userName == null) return null;
 
+        //TODO: magic number
         String roomId = destinationPages[3];
+        if(!validateRoomVideoDuration(roomId, headerAccessor)) return null;
+
         String connectionId = headerAccessor.getUser().getName();
         if(!roomController.addRoomInfoSubscriber(roomId, connectionId)) return null;
 
@@ -135,6 +181,19 @@ public class MessagesInterceptor implements ChannelInterceptor {
         return userId;
     }
 
+    private boolean validateRoomVideoDuration(String roomId, StompHeaderAccessor headerAccessor) {
+        if(!headerAccessor.containsNativeHeader("videoDuration")){
+            //TODO: log error
+            return false;
+        }
+
+        String videoDurationStringValue = headerAccessor.getFirstNativeHeader("videoDuration");
+        double videoDuration = parseVideoDuration(videoDurationStringValue);
+        if(videoDuration < 0) return false;
+
+        return roomController.isSameVideoDuration(roomId, videoDuration);
+    }
+
     private String validateUserNameInHeaderAccessor(StompHeaderAccessor headerAccessor) {
         if(!headerAccessor.containsNativeHeader("userName")){
             //TODO: log error
@@ -144,5 +203,14 @@ public class MessagesInterceptor implements ChannelInterceptor {
         userName = userController.validateUserName(userName);
         headerAccessor.setNativeHeader("userName", userName);
         return userName;
+    }
+
+    private double parseVideoDuration(String videoDurationStringValue) {
+        try{
+            double videoDuration = Double.parseDouble(videoDurationStringValue);
+            return videoDuration;
+        }catch (NumberFormatException | NullPointerException e){
+            return -1;
+        }
     }
 }
