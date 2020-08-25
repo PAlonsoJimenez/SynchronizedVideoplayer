@@ -76,7 +76,6 @@ function createNewRoom(){
     if(subscribedToRoom != null) unsubscribeFromRoom();
     roomCreatorName = getUserName();
     roomCreatorId = userId;
-    //TODO: Maybe some user message to let the user know there is some problem?
     //TODO: if the userId is invalid, ask again for a new userId.
     if (!validateUserName(roomCreatorName)) return;
     if(!validateUserId(roomCreatorId)) return;
@@ -137,19 +136,19 @@ function showControlsInFullScreenMode() {
 }
 
 function userFileReady(){
-    //TODO: If connected, disconnect
-    //TODO: Move this to view Method. (Not all the function, only after check if connected and disconnected)
-    titleText.innerHTML = userFile.name;
-    customText.innerHTML = "File Loaded Successfully";
+    if(subscribedToRoom != null) unsubscribeFromRoom();
+    fileLoaderMessage("File Loaded Successfully");
+    setVideoTitle(userFile.name);
 }
 
-function videoPlayerError(){
-    //TODO: ask for the error variable in the method.
-    //TODO: If connected, disconnect
+function videoPlayerError(errorEvent){
+    //TODO: do something with the error code?
+    //console.log("Error event:");
+    //console.log(errorEvent.target.error);
+    if(subscribedToRoom != null) unsubscribeFromRoom();
     userFile = null;
-    //TODO: Move the next part to viewMethods
-    titleText.innerHTML = "Title";
-    customText.innerHTML = "Unable To Load File";
+    fileLoaderMessage("Unable To Load File");
+    setVideoTitle("Title");
 }
 
 function progressBarMoveToTime(e) {
@@ -234,7 +233,7 @@ function connectToServer(){
     stompClient = Stomp.over(socket);
     var headers = createStompConnectHeaders();
     //method used: client.connect(headers, connectCallback, errorCallback)
-    stompClient.connect(headers, subscribeToUserPrivateChannel, unableToConnectToServer); //It's missing an errorCallback function.
+    stompClient.connect(headers, subscribeToUserPrivateChannel, unableToConnectToServer);
 }
 
 function unableToConnectToServer(){
@@ -288,7 +287,7 @@ function parseRoomInfo(responseJson){
     subscribeToRoomChannels();
     //TODO: The Stomp library doesn't give a confirmation message of any kind for a subscription. We can't
     //Todo: be sure about if the user have successfully subscribed to a specific channel...
-    updateRoomInfo(room);
+    showMessage("Connected to  Room: " + roomId, "green");
 }
 
 function subscribeToRoomChannels() {
@@ -359,8 +358,7 @@ function unsubscribeFromRoom(){
 
     subscribedToRoom = null;
     subscribedToRoomInfo = null;
-    //TODO: Change method name
-    updateConnectionStatus();
+    showMessage("Not Connected", "red");
     emptyViewersTable();
 }
 
@@ -421,8 +419,7 @@ function createStompSubscribeToRoomInfoHeaders(){
 
 function validateUserName(userName) {
     if (userName.length < 1) {
-        //TODO: move this to view methods
-        roomConnectedName.innerHTML = "User Name Empty";
+        showMessage("Username empty", "orange");
         return false;
     }
     return true;
@@ -430,8 +427,7 @@ function validateUserName(userName) {
 
 function validateUserId(userIdToValidate){
     if(userIdToValidate == null || userIdToValidate == "mysteryUser"){
-        //TODO: message to the user here?
-        return false;
+        showMessage("Username empty id invalid, please refresh page");
     }else{
         return true;
     }
@@ -440,8 +436,7 @@ function validateUserId(userIdToValidate){
 function validateRoomCode(roomCode){
     if(roomCode == null) return false;
     if(roomCode == roomId){
-        //TODO: Show message: "already connected to room x"
-        console.log("Already connected to that room");
+        showMessage("Already connected to room: " + roomCode, "orange");
         return false;
     }
 
@@ -450,8 +445,7 @@ function validateRoomCode(roomCode){
 
 function validateUserFile(){
     if(userFile == null){
-        //TODO: message to user
-        console.log("No file selected!");
+        showMessage("No file selected yet", "orange");
         return -1;
     }
 
@@ -462,16 +456,28 @@ function validateUserFile(){
 /// VIEW METHODS ///
 ////////////////////
 
-function updateRoomInfo(room){
-    //TODO: rest of the info
-    roomConnectedName.innerHTML = "Connected to  Room: " + room.roomId;
-    roomConnectedName.style.color = "green";
+function showMessage(message, color){
+    //TODO: change roomConnectedName name
+    roomConnectedName.innerHTML = message;
+    switch(color){
+        case "green":
+            roomConnectedName.style.color = "green";
+            break;
+        case "orange":
+            roomConnectedName.style.color = "orange";
+            break;
+        default:
+            roomConnectedName.style.color = "red";
+    }
 }
 
-function updateConnectionStatus(){
-    roomConnectedName.innerHTML = "Not Connected Yet";
-    roomConnectedName.style.color = "red";
-    console.log("Disconnected");
+function fileLoaderMessage(newMessage){
+    //TODO: change customText variable name
+    customText.innerHTML = newMessage;
+}
+
+function setVideoTitle(newTitle){
+    titleText.innerHTML = newTitle;
 }
 
 function playPauseAction() {
