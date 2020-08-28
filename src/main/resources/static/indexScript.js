@@ -83,11 +83,14 @@ function createNewRoom(){
 }
 
 function connectToSomeoneElseRoom(){
-    var videoDuration = validateUserFile();
-    if(videoDuration <= 0) return;
+    //TODO: add something in the html to show if the user is connected or not. The nex line will show a message
+    //TODO: if it was unable to connect due to for example, an empty room code, but it will remain connected to an
+    //TODO: old session if the user was connected previous to the attempt to connect to someone else room.
     var roomCode = roomCodeTextField.value;
     if(!validateRoomCode(roomCode)) return;
     if(subscribedToRoom != null) unsubscribeFromRoom();
+    var videoDuration = validateUserFile();
+    if(videoDuration <= 0) return;
     roomId = roomCode;
     subscribeToRoomChannels();
 }
@@ -300,7 +303,7 @@ function subscribeToRoomInfoChanges() {
     //It seems that the subscribe method doesn't have an errorCallback function as an argument.
     //It seems that you are unable to know if the subscription was successful...
     var headers = createStompSubscribeToRoomInfoHeaders();
-    stompClient.subscribe("/roomInfoController/change/" + roomId, function (messageOutput) {
+    subscribedToRoomInfo = stompClient.subscribe("/roomInfoController/change/" + roomId, function (messageOutput) {
         receiveRoomInfoChanges(JSON.parse(messageOutput.body));
     }, headers);
 }
@@ -353,11 +356,20 @@ function sendVideoPlayerChanges(message) {
 }
 
 function unsubscribeFromRoom(){
-    if(subscribedToRoom != null) subscribedToRoom.unsubscribe();
-    if(subscribedToRoomInfo != null) subscribedToRoomInfo.unsubscribe();
+    //TODO: same as subscriptions, thw user will not receive any answer for they unsubscription attempt
+    if(subscribedToRoom != null){
+        var headers = createUnsubscribeHeaders("videoControllerChannel");
+        subscribedToRoom.unsubscribe(headers);
+    }
+
+    if(subscribedToRoomInfo != null){
+        var headers = createUnsubscribeHeaders("roomInfoChannel");
+        subscribedToRoomInfo.unsubscribe(headers);
+    }
 
     subscribedToRoom = null;
     subscribedToRoomInfo = null;
+    roomId = null;
     showMessage("Not Connected", "red");
     emptyViewersTable();
 }
@@ -395,7 +407,6 @@ function createStompSubscribeToUserPrivateChannel(){
 }
 
 function createStompSubscribeToVideoPLayerChangeHeaders(){
-    console.log("Video player duration: " + videoPlayer.duration);
     var stompHeaders = {
         userId: userId,
         videoDuration: videoPlayer.duration
@@ -404,12 +415,31 @@ function createStompSubscribeToVideoPLayerChangeHeaders(){
 }
 
 function createStompSubscribeToRoomInfoHeaders(){
-    console.log("Room info duration: " + videoPlayer.duration);
     var stompHeaders = {
         userId: userId,
         userName: getUserName(),
         videoDuration: videoPlayer.duration
     };
+    return stompHeaders;
+}
+
+function createUnsubscribeHeaders(unsubscribeChannel){
+    var channelToUnsubscribe = "";
+    switch(unsubscribeChannel){
+        case "videoControllerChannel":
+            channelToUnsubscribe = "videoControllerChannel";
+            break;
+        case "roomInfoChannel":
+            channelToUnsubscribe = "roomInfoChannel";
+            break;
+        default:
+            channelToUnsubscribe = "videoControllerChannel";
+    }
+    var stompHeaders = {
+        userId: userId,
+        roomId: roomId,
+        channelToUnsubscribe: channelToUnsubscribe
+    }
     return stompHeaders;
 }
 
@@ -434,7 +464,10 @@ function validateUserId(userIdToValidate){
 }
 
 function validateRoomCode(roomCode){
-    if(roomCode == null) return false;
+    if(roomCode == "" || roomCode == null){
+        showMessage("Empty room code, unable to connect", "orange");
+        return false;
+    }
     if(roomCode == roomId){
         showMessage("Already connected to room: " + roomCode, "orange");
         return false;
