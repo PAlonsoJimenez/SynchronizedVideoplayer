@@ -54,6 +54,10 @@ public class Room {
         }
     }
 
+    public boolean removeVideoControllerSubscriber(String connectionId){
+        return videoControllerSubscribers.remove(connectionId);
+    }
+
     public boolean isVideoControllerSubscriber(String connectionId){
         return videoControllerSubscribers.contains(connectionId);
     }
@@ -65,6 +69,10 @@ public class Room {
             roomInfoSubscribers.add(connectionId);
             return true;
         }
+    }
+
+    public boolean removeRoomInfoSubscriber(String connectionId){
+        return roomInfoSubscribers.remove(connectionId);
     }
 
     public boolean isRoomInfoSubscriber(String connectionId){
