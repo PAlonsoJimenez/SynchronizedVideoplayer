@@ -76,4 +76,16 @@ public class RoomController {
         if(room == null) return false;
         return room.isRoomInfoSubscriber(connectionId);
     }
+
+    public boolean unsubscribeFromVideoControllerChannel(String roomId, String connectionId){
+        Room room = DatabaseManager.getRoom(roomId);
+        if(room == null) return false;
+        return room.removeVideoControllerSubscriber(connectionId);
+    }
+
+    public boolean unsubscribeFromRoomInfoChannel(String roomId, String connectionId){
+        Room room = DatabaseManager.getRoom(roomId);
+        if(room == null) return false;
+        return room.removeRoomInfoSubscriber(connectionId);
+    }
 }
