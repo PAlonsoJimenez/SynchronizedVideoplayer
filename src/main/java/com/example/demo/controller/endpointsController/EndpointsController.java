@@ -12,6 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
+import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
 @Controller
 public class EndpointsController {
@@ -46,5 +47,11 @@ public class EndpointsController {
     private void afterSubscribeEventHandler (SessionSubscribeEvent sessionSubscribeEvent){
         subscriptionController.afterSubscribeEventHandler(sessionSubscribeEvent, template);
     }
+
+    @EventListener
+    private  void afterUnsubscribeEventHandler (SessionUnsubscribeEvent sessionUnsubscribeEvent){
+        subscriptionController.afterUnsubscribeEventHandler(sessionUnsubscribeEvent, template);
+    }
+
 }
 
