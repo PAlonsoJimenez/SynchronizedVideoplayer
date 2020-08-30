@@ -89,6 +89,8 @@ function connectToSomeoneElseRoom(){
     var roomCode = roomCodeTextField.value;
     if(!validateRoomCode(roomCode)) return;
     if(subscribedToRoom != null) unsubscribeFromRoom();
+    roomCreatorName = getUserName();
+    if (!validateUserName(roomCreatorName)) return;
     var videoDuration = validateUserFile();
     if(videoDuration <= 0) return;
     roomId = roomCode;
@@ -254,7 +256,7 @@ function subscribeToUserPrivateChannel(){
 
 function receivePrivateUserInfo(userInfo){
     if(userInfo.action == "FULL_ROOM_INFO"){
-        userInfo.users.forEach(addPeopleWatching);
+        userInfo.users.forEach(addUserToPeopleWatchingTable);
     }
 }
 
@@ -309,12 +311,11 @@ function subscribeToRoomInfoChanges() {
 }
 
 function receiveRoomInfoChanges(roomInfo) {
-    //todo: Store user info somewhere
-    //TODO: Leaving
     if(roomInfo.action == "JOINING"){
-        roomInfo.users.forEach(addPeopleWatching);
+        roomInfo.users.forEach(addUserToPeopleWatchingTable);
     }
     if(roomInfo.action == "LEAVING"){
+        roomInfo.users.forEach(removeUserFromPeopleWatchingTable);
     }
 }
 
@@ -424,6 +425,8 @@ function createStompSubscribeToRoomInfoHeaders(){
 }
 
 function createUnsubscribeHeaders(unsubscribeChannel){
+    unsubscribedUserName = getUserName();
+    if (unsubscribedUserName.length < 1) unsubscribedUserName = "XxXlittle_weeperxXx";
     var channelToUnsubscribe = "";
     switch(unsubscribeChannel){
         case "videoControllerChannel":
@@ -437,6 +440,7 @@ function createUnsubscribeHeaders(unsubscribeChannel){
     }
     var stompHeaders = {
         userId: userId,
+        userName: unsubscribedUserName,
         roomId: roomId,
         channelToUnsubscribe: channelToUnsubscribe
     }
@@ -543,14 +547,23 @@ function moveToTimeAction (newTime){
     videoPlayer.currentTime = newTime;
 }
 
-function addPeopleWatching (newWatcher){
-    //TODO: define somewhere what is a watcher
+function addUserToPeopleWatchingTable (newUser){
+    //User object: {"userId":"4a208408-c797-46a7-99ec-cc8f9f10cfcc","userName":"Anonymous"}
     var trNode = document.createElement("tr");
+    trNode.id = newUser.userId;
+
     var thNode = document.createElement("th");
     thNode.className = "roomViewer text";
-    thNode.innerHTML = newWatcher.userName;
+    thNode.innerHTML = newUser.userName;
+
     trNode.appendChild(thNode);
     viewersTableBody.appendChild(trNode);
+}
+
+function removeUserFromPeopleWatchingTable(userToRemove){
+    //User object: {"userId":"4a208408-c797-46a7-99ec-cc8f9f10cfcc","userName":"Anonymous"}
+    var userToRemove = document.getElementById(userToRemove.userId);
+    userToRemove.remove();
 }
 
 function emptyViewersTable(){
