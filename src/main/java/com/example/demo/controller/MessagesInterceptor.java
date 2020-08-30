@@ -43,7 +43,11 @@ public class MessagesInterceptor implements ChannelInterceptor {
         }
 
         if(StompCommand.SUBSCRIBE.equals(headerAccessor.getCommand())){
-            return tryingToSubscribe(message, channel);
+            return tryingToSubscribe(message);
+        }
+
+        if(StompCommand.UNSUBSCRIBE.equals(headerAccessor.getCommand())){
+            return tryingToUnsubscribe(message);
         }
 
         if(StompCommand.DISCONNECT.equals(headerAccessor.getCommand())){
@@ -95,7 +99,7 @@ public class MessagesInterceptor implements ChannelInterceptor {
         return ((userId == null) ? null : message);
     }
 
-    private Message<?> tryingToSubscribe(Message<?> message, MessageChannel channel) {
+    private Message<?> tryingToSubscribe(Message<?> message) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(message);
         String destination = headerAccessor.getDestination();
         if(destination == null){
@@ -125,6 +129,34 @@ public class MessagesInterceptor implements ChannelInterceptor {
             default:
                 return null;
         }
+    }
+
+    private Message<?> tryingToUnsubscribe(Message<?> message) {
+        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(message);
+        if(validateUserIdInHeaderAccessor(headerAccessor) == null) return null;
+
+        if(validateUserNameInHeaderAccessor(headerAccessor) == null) return null;
+
+        String channelToUnsubscribe = getChannelToUnsubscribe(headerAccessor);
+        if(channelToUnsubscribe == null) return null;
+
+        String roomId = getRoomId(headerAccessor);
+        if(roomId == null) return null;
+
+        String connectionId = headerAccessor.getUser().getName();
+        boolean unsubscribedSuccessfully = false;
+        switch(channelToUnsubscribe){
+            case "videoControllerChannel":
+                unsubscribedSuccessfully = roomController.unsubscribeFromVideoControllerChannel(roomId, connectionId);
+                break;
+            case "roomInfoChannel":
+                unsubscribedSuccessfully = roomController.unsubscribeFromRoomInfoChannel(roomId, connectionId);
+                break;
+            default:
+                return null;
+        }
+
+        return ((unsubscribedSuccessfully) ? message : null);
     }
 
     private Message<?> userPrivateInfoSubscribingAttempt(StompHeaderAccessor headerAccessor, Message<?> message) {
@@ -212,5 +244,31 @@ public class MessagesInterceptor implements ChannelInterceptor {
         }catch (NumberFormatException | NullPointerException e){
             return -1;
         }
+    }
+
+    private String getChannelToUnsubscribe(StompHeaderAccessor headerAccessor) {
+        if(!headerAccessor.containsNativeHeader("channelToUnsubscribe")){
+            //TODO: log error
+            return null;
+        }
+
+        String channelToUnsubscribe = headerAccessor.getFirstNativeHeader("channelToUnsubscribe");
+        switch(channelToUnsubscribe){
+            case "videoControllerChannel":
+            case "roomInfoChannel":
+                return channelToUnsubscribe;
+            default:
+                return null;
+        }
+    }
+
+    private String getRoomId(StompHeaderAccessor headerAccessor) {
+        if(!headerAccessor.containsNativeHeader("roomId")){
+            //TODO: log error
+            return null;
+        }
+
+        String roomId = headerAccessor.getFirstNativeHeader("roomId");
+        return roomId;
     }
 }
