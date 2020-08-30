@@ -5,6 +5,7 @@ import com.example.demo.model.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
+import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
 public class SubscriptionController {
     private final RoomController roomController;
@@ -28,6 +29,18 @@ public class SubscriptionController {
             String userId = headerAccessor.getFirstNativeHeader("userId");
             String userName = headerAccessor.getFirstNativeHeader("userName");
             template.convertAndSend(destination, new RoomInfoMessage(RoomInfoMessage.Action.JOINING, new User(userId, userName)));
+        }
+    }
+
+    public void afterUnsubscribeEventHandler (SessionUnsubscribeEvent unsubscribeEvent, SimpMessagingTemplate template){
+        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(unsubscribeEvent.getMessage());
+        String channelToUnsubscribe = headerAccessor.getFirstNativeHeader("channelToUnsubscribe");
+        if(channelToUnsubscribe.equals("roomInfoChannel")){
+            String roomId = headerAccessor.getFirstNativeHeader("roomId");
+            String userId = headerAccessor.getFirstNativeHeader("userId");
+            String userName = headerAccessor.getFirstNativeHeader("userName");
+            String destination = "/roomInfoController/change/" + roomId;
+            template.convertAndSend(destination, new RoomInfoMessage(RoomInfoMessage.Action.LEAVING, new User(userId, userName)));
         }
     }
 
