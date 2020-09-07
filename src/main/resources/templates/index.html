@@ -27,13 +27,16 @@
 
     <div class="interactiveContainer">
         <div class="connexionContainer">
+            <div class="infoForUserContainer">
+                <span class="text flexItem" id="infoForUser"></span>
+            </div>
             <div class="userNameContainer">
                 <span class="text flexItem">User Name:</span>
                 <input class="flexItem" type="text" id="userNameTextField" value="Anonymous" maxlength="20"/>
             </div>
             <div class="createRoomContainer">
                 <button class="flexItem prettyButton" type="button" id="createRoomButton">Create a room</button>
-                <span class="connexionStatus flexItem" id="roomConnectedName">Not Connected Yet</span>
+                <span class="connexionStatus flexItem" id="connectionStatus">Not Connected Yet</span>
             </div>
             <div class="connectToRoomContainer">
                 <span class="text flexItem">Room Code:</span>
