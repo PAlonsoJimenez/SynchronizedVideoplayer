@@ -1,7 +1,8 @@
 //Connection elements
+const infoForUser = document.getElementById("infoForUser");
 const userNameTextField = document.getElementById("userNameTextField");
 const createRoomButton = document.getElementById("createRoomButton");
-const roomConnectedName = document.getElementById("roomConnectedName");
+const connectionStatus = document.getElementById("connectionStatus");
 const roomCodeTextField = document.getElementById("roomCodeTextField");
 const connectButton = document.getElementById("connectButton");
 
@@ -83,14 +84,11 @@ function createNewRoom(){
 }
 
 function connectToSomeoneElseRoom(){
-    //TODO: add something in the html to show if the user is connected or not. The nex line will show a message
-    //TODO: if it was unable to connect due to for example, an empty room code, but it will remain connected to an
-    //TODO: old session if the user was connected previous to the attempt to connect to someone else room.
     var roomCode = roomCodeTextField.value;
     if(!validateRoomCode(roomCode)) return;
     if(subscribedToRoom != null) unsubscribeFromRoom();
-    roomCreatorName = getUserName();
-    if (!validateUserName(roomCreatorName)) return;
+    let userName = getUserName();
+    if (!validateUserName(userName)) return;
     var videoDuration = validateUserFile();
     if(videoDuration <= 0) return;
     roomId = roomCode;
@@ -290,14 +288,15 @@ function parseRoomInfo(responseJson){
     let room = JSON.parse(responseJson);
     roomId = room.roomId;
     subscribeToRoomChannels();
-    //TODO: The Stomp library doesn't give a confirmation message of any kind for a subscription. We can't
-    //Todo: be sure about if the user have successfully subscribed to a specific channel...
-    showMessage("Connected to  Room: " + roomId, "green");
 }
 
 function subscribeToRoomChannels() {
     subscribeToRoomInfoChanges();
     subscribeToVideoPlayerChanges();
+    //TODO: The Stomp library doesn't give a confirmation message of any kind for a subscription. We can't
+    //Todo: be sure about if the user have successfully subscribed to a specific channel...
+    showConnectionStatus("Connected to  Room: " + roomId, "green");
+    showMessage("Connected", "green");
 }
 
 function subscribeToRoomInfoChanges() {
@@ -371,7 +370,8 @@ function unsubscribeFromRoom(){
     subscribedToRoom = null;
     subscribedToRoomInfo = null;
     roomId = null;
-    showMessage("Not Connected", "red");
+    showConnectionStatus("Not Connected", "red");
+    showMessage("Disconnected", "red");
     emptyViewersTable();
 }
 
@@ -494,17 +494,25 @@ function validateUserFile(){
 ////////////////////
 
 function showMessage(message, color){
-    //TODO: change roomConnectedName name
-    roomConnectedName.innerHTML = message;
+    infoForUser.innerHTML = message;
     switch(color){
         case "green":
-            roomConnectedName.style.color = "green";
+            infoForUser.style.color = "green";
             break;
         case "orange":
-            roomConnectedName.style.color = "orange";
+            infoForUser.style.color = "orange";
             break;
         default:
-            roomConnectedName.style.color = "red";
+            infoForUser.style.color = "red";
+    }
+}
+
+function showConnectionStatus(message, color){
+    connectionStatus.innerHTML = message;
+    if(color == "green"){
+        connectionStatus.style.color = "green";
+    }else{
+        connectionStatus.style.color = "red";
     }
 }
 
