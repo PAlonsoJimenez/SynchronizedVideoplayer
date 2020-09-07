@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Set;
 
 public class RoomInfoMessage {
-    //TODO: For the user do something as publicId and privateID
     public enum Action{
         JOINING, LEAVING, FULL_ROOM_INFO
     }
