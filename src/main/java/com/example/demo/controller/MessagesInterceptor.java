@@ -62,7 +62,7 @@ public class MessagesInterceptor implements ChannelInterceptor {
     private Message<?> tryingToSend(Message<?> message) {
         //TODO clean this method
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(message);
-        String userId = validateUserIdInHeaderAccessor(headerAccessor);
+
         String destination = headerAccessor.getDestination();
         if(destination == null){
             //TODO: log error
