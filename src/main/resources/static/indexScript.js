@@ -248,13 +248,45 @@ function subscribeToUserPrivateChannel(){
     isConnected = true;
     var headers = createStompSubscribeToUserPrivateChannel();
     stompClient.subscribe("/user/queue/reply", function (messageOutput) {
-        receivePrivateUserInfo(JSON.parse(messageOutput.body));
+        receivePrivateUserMessage(tryingToParseToJsonObject(messageOutput.body));
     }, headers);
 }
 
-function receivePrivateUserInfo(userInfo){
-    if(userInfo.action == "FULL_ROOM_INFO"){
-        userInfo.users.forEach(addUserToPeopleWatchingTable);
+function tryingToParseToJsonObject(messageOutputBody){
+    try{
+        var parsed = JSON.parse(messageOutputBody);
+        return parsed;
+    } catch (error){
+        //Probably is only byte[] data from template.convertAndSendToUser from MessageInterceptor. IT MAY BE A REAL PROBLEM...
+        return messageOutputBody;
+    }
+}
+
+function receivePrivateUserMessage(privateUserMessage){
+    if (typeof privateUserMessage === 'string' || privateUserMessage instanceof String){
+        processUserError(privateUserMessage);
+    }else{
+        processUserMessage(privateUserMessage);
+    }
+}
+
+function processUserError(userError){
+    roomId = null;
+    subscribedToRoom = null;
+    subscribedToRoomInfo = null;
+    switch(userError){
+        case "INCORRECT_VIDEO_FILE":
+            showConnectionStatus("Not Connected", "red");
+            showMessage("Unable to connect to room. The file selected is not the file everyone else is watching. Please change the file.", "red");
+            break;
+        default:
+            break;
+    }
+}
+
+function processUserMessage(userMessage){
+    if(userMessage.action == "FULL_ROOM_INFO"){
+        userMessage.users.forEach(addUserToPeopleWatchingTable);
     }
 }
 
@@ -333,6 +365,7 @@ function receiveVideoPlayerChanges(message) {
     if(message.senderId === userId) return;
 
     switch (message.action) {
+        //TODO: check if the new time is in range of the video playing.
         case PLAY_PAUSE:
             //TODO: Move this line of code to the viewMethods (Already in moveToTimeAction)
             //Maybe I can Overload the playPauseAction() method, with a 'currentTime' param,
@@ -461,7 +494,7 @@ function validateUserName(userName) {
 
 function validateUserId(userIdToValidate){
     if(userIdToValidate == null || userIdToValidate == "mysteryUser"){
-        showMessage("Username empty id invalid, please refresh page");
+        showMessage("User Id invalid, please refresh page");
     }else{
         return true;
     }
