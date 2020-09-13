@@ -2,11 +2,15 @@ package com.example.demo.controller;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import java.nio.charset.StandardCharsets;
 
 public class MessagesInterceptor implements ChannelInterceptor {
+    private final String INCORRECT_VIDEO_FILE = "INCORRECT_VIDEO_FILE";
+
     private final UserController userController;
     private final RoomController roomController;
 
@@ -43,7 +47,7 @@ public class MessagesInterceptor implements ChannelInterceptor {
         }
 
         if(StompCommand.SUBSCRIBE.equals(headerAccessor.getCommand())){
-            return tryingToSubscribe(message);
+            return tryingToSubscribe(message, channel);
         }
 
         if(StompCommand.UNSUBSCRIBE.equals(headerAccessor.getCommand())){
@@ -99,7 +103,7 @@ public class MessagesInterceptor implements ChannelInterceptor {
         return ((userId == null) ? null : message);
     }
 
-    private Message<?> tryingToSubscribe(Message<?> message) {
+    private Message<?> tryingToSubscribe(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(message);
         String destination = headerAccessor.getDestination();
         if(destination == null){
@@ -120,7 +124,7 @@ public class MessagesInterceptor implements ChannelInterceptor {
 
         switch(destinationPrefix){
             case "videoController":
-                return videoControllerSubscribingAttempt(headerAccessor, destinationPages, message);
+                return videoControllerSubscribingAttempt(headerAccessor, destinationPages, message, channel);
             case "roomInfoController":
                 return roomInfoControllerSubscribingAttempt(headerAccessor, destinationPages, message);
                 //TODO: this better:
@@ -164,15 +168,21 @@ public class MessagesInterceptor implements ChannelInterceptor {
         return message;
     }
 
-    private Message<?> videoControllerSubscribingAttempt(StompHeaderAccessor headerAccessor, String[] destinationPages, Message<?> message) {
+    private Message<?> videoControllerSubscribingAttempt(StompHeaderAccessor headerAccessor, String[] destinationPages, Message<?> message, MessageChannel channel) {
         String userId = validateUserIdInHeaderAccessor(headerAccessor);
         if(userId == null) return null;
+        String connectionId = headerAccessor.getUser().getName();
 
         //TODO: magic number
         String roomId = destinationPages[3];
-        if(!validateRoomVideoDuration(roomId, headerAccessor)) return null;
+        if(!validateRoomVideoDuration(roomId, headerAccessor)){
+            //Send the user a message
+            byte[] userPrivateMessage = INCORRECT_VIDEO_FILE.getBytes(StandardCharsets.UTF_8);
+            SimpMessagingTemplate template = new SimpMessagingTemplate(channel);
+            template.convertAndSendToUser(connectionId, "/queue/reply", userPrivateMessage);
+            return null;
+        }
 
-        String connectionId = headerAccessor.getUser().getName();
         if(!roomController.addVideoControllerSubscriber(roomId, connectionId)) return null;
 
         return message;
