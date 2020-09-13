@@ -26,7 +26,7 @@ pauseIcon.src = "pauseIcon.png";
 //File Selector elements
 const hiddenInputFileButton = document.getElementById("UserFile");
 const customButton = document.getElementById("customButton");
-const customText = document.getElementById("customText");
+const fileStatusTextInfo = document.getElementById("fileStatusTextInfo");
 
 //RoomInfo elements
 const viewersTableBody = document.getElementById("viewersTableBody");
@@ -329,16 +329,14 @@ function parseRoomInfo(responseJson){
 function subscribeToRoomChannels() {
     subscribeToRoomInfoChanges();
     subscribeToVideoPlayerChanges();
-    //TODO: The Stomp library doesn't give a confirmation message of any kind for a subscription. We can't
-    //Todo: be sure about if the user have successfully subscribed to a specific channel...
+    // The Stomp library doesn't give a confirmation message of any kind for a subscription. This problem
+    // is attempted to be solved with private user messages.
     showConnectionStatus("Connected to  Room: " + roomId, "green");
     showMessage("Connected", "green");
 }
 
 function subscribeToRoomInfoChanges() {
     //subscribe(destination, callback, headers = {})
-    //It seems that the subscribe method doesn't have an errorCallback function as an argument.
-    //It seems that you are unable to know if the subscription was successful...
     var headers = createStompSubscribeToRoomInfoHeaders();
     subscribedToRoomInfo = stompClient.subscribe("/roomInfoController/change/" + roomId, function (messageOutput) {
         receiveRoomInfoChanges(JSON.parse(messageOutput.body));
@@ -356,8 +354,6 @@ function receiveRoomInfoChanges(roomInfo) {
 
 function subscribeToVideoPlayerChanges() {
     //subscribe(destination, callback, headers = {})
-    //It seems that the subscribe method doesn't have an errorCallback function as an argument.
-    //It seems that you are unable to know if the subscription was successful...
     var headers = createStompSubscribeToVideoPLayerChangeHeaders();
     subscribedToRoom = stompClient.subscribe("/videoController/change/" + roomId, function (messageOutput) {
         receiveVideoPlayerChanges(JSON.parse(messageOutput.body));
@@ -393,7 +389,8 @@ function sendVideoPlayerChanges(message) {
 }
 
 function unsubscribeFromRoom(){
-    //TODO: same as subscriptions, thw user will not receive any answer for they unsubscription attempt
+    // Same as subscriptions, the user will not receive any answer for they unsubscription attempt. This problem
+    // is attempted to be solved with private user messages.
     if(subscribedToRoom != null){
         var headers = createUnsubscribeHeaders("videoControllerChannel");
         subscribedToRoom.unsubscribe(headers);
@@ -553,9 +550,8 @@ function showConnectionStatus(message, color){
     }
 }
 
-function fileLoaderMessage(newMessage){
-    //TODO: change customText variable name
-    customText.innerHTML = newMessage;
+function fileLoaderMessage(newStatus){
+    fileStatusTextInfo.innerHTML = newStatus;
 }
 
 function setVideoTitle(newTitle){
