@@ -59,6 +59,7 @@ videoPlayer.addEventListener("timeupdate", updateVideoState);
 videoPlayer.addEventListener("mousemove", showControlsInFullScreenMode);
 videoPlayer.addEventListener("loadstart", userFileReady);
 videoPlayer.addEventListener("error", videoPlayerError);
+videoPlayer.addEventListener("load", freeVideoMemory);
 progressBar.addEventListener("click", progressBarMoveToTime);
 controlsContainer.addEventListener("mouseover", mouseOverControlsContainer);
 controlsContainer.addEventListener("mouseout", mouseOutControlsContainer);
@@ -161,7 +162,6 @@ function progressBarMoveToTime(e) {
 
     message = {senderId: userId, action: MOVE, videoTimeStamp : videoPlayerNewCurrentTime};
     sendVideoPlayerChanges(message);
-    //Todo: This one has to be after sending the message... try to do it with threads.
     moveToTimeAction(videoPlayerNewCurrentTime);
 }
 
@@ -182,7 +182,6 @@ function selectFile() {
         userFile = hiddenInputFileButton.files[0];
         console.log("Size: " + userFile.size);
         videoPlayer.src = URL.createObjectURL(userFile);
-        //TODO: videoPlayer.onload = function () {URL.revokeObjectURL(videoPlayer.src); // free memory};
     }
 }
 
@@ -202,6 +201,11 @@ function getUserName(){
     var roomCreatorName = userNameTextField.value;
     roomCreatorName = roomCreatorName.trim();
     return roomCreatorName;
+}
+
+function freeVideoMemory(){
+    //free memory
+    URL.revokeObjectURL(videoPlayer.src);
 }
 
 /////////////////////////////////////
