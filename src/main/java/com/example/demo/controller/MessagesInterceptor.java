@@ -55,12 +55,17 @@ public class MessagesInterceptor implements ChannelInterceptor {
         }
 
         if(StompCommand.DISCONNECT.equals(headerAccessor.getCommand())){
-            //TODO: clean after disconnecting
-            //System.out.println("DISCONNECTING");
+            disconnectCleanup(message);
+            return message;
         }
 
-        //TODO: check if I should return null instead of message here.
-        return message;
+        return null;
+    }
+
+    private void disconnectCleanup(Message<?> message) {
+        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(message);
+        //TODO THIS METHOD
+        String connectionId = headerAccessor.getUser().getName();
     }
 
     private Message<?> tryingToSend(Message<?> message) {
@@ -164,7 +169,10 @@ public class MessagesInterceptor implements ChannelInterceptor {
     }
 
     private Message<?> userPrivateInfoSubscribingAttempt(StompHeaderAccessor headerAccessor, Message<?> message) {
-        //TODO: send userId in Stomp headers in the js
+        String userId = validateUserIdInHeaderAccessor(headerAccessor);
+        if(userId == null) return null;
+        String connectionId = headerAccessor.getUser().getName();
+        if(!userController.setUserConnectionId(userId, connectionId)) return null;
         return message;
     }
 
