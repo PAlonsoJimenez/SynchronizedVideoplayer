@@ -604,7 +604,7 @@ function addUserToPeopleWatchingTable (newUser){
 function removeUserFromPeopleWatchingTable(userToRemove){
     //User object: {"userId":"4a208408-c797-46a7-99ec-cc8f9f10cfcc","userName":"Anonymous"}
     var userToRemove = document.getElementById(userToRemove.userId);
-    userToRemove.remove();
+    if(userToRemove != null) userToRemove.remove();
 }
 
 function emptyViewersTable(){
