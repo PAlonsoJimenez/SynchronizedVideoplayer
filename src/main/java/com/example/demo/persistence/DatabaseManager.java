@@ -28,6 +28,13 @@ public class DatabaseManager {
                 .orElse(null));
     }
 
+    public static User getUserByConnectionId(String connectionId){
+        return (activeUsers.stream()
+                .filter(user -> user.getConnectionId().equals(connectionId))
+                .findFirst()
+                .orElse(null));
+    }
+
     public static Room getRoom(String roomId){
         return (openedRooms.stream()
                 .filter(room -> room.getRoomId().equals(roomId))
